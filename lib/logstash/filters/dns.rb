@@ -9,10 +9,10 @@ require "logstash/namespace"
 
 # The DNS filter performs a lookup (either an A record/CNAME record lookup
 # or a reverse lookup at the PTR record) on records specified under the
-# "reverse" and "resolve" arrays.
+# `reverse` and `resolve` arrays.
 #
 # The config should look like this:
-#
+# [source,ruby]
 #     filter {
 #       dns {
 #         type => 'type'
@@ -22,11 +22,8 @@ require "logstash/namespace"
 #       }
 #     }
 #
-# Caveats: at the moment, there's no way to tune the timeout with the 'resolv'
-# core library.  It does seem to be fixed in here:
-#
-#   http://redmine.ruby-lang.org/issues/5100
-#
+# Caveats: at the moment, there's no way to tune the timeout with the `resolv`
+# core library.  It does seem to be fixed in here: http://redmine.ruby-lang.org/issues/5100
 # but isn't currently in JRuby.
 class LogStash::Filters::DNS < LogStash::Filters::Base
 
@@ -40,17 +37,17 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   config :resolve, :validate => :array
 
   # Determine what action to do: append or replace the values in the fields
-  # specified under "reverse" and "resolve."
+  # specified under `reverse` and `resolve`.
   config :action, :validate => [ "append", "replace" ], :default => "append"
 
   # Use custom nameserver.
   config :nameserver, :validate => :string
 
-  # TODO(sissel): make 'action' required? This was always the intent, but it
+  # TODO(sissel): make `action` required? This was always the intent, but it
   # due to a typo it was never enforced. Thus the default behavior in past
-  # versions was 'append' by accident.
+  # versions was `append` by accident.
 
-  # resolv calls will be wrapped in a timeout instance
+  # `resolv` calls will be wrapped in a timeout instance
   config :timeout, :validate => :number, :default => 2
 
   public
