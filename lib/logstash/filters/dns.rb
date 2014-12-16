@@ -8,17 +8,15 @@ require "logstash/filters/base"
 require "logstash/namespace"
 
 # The DNS filter performs a lookup (either an A record/CNAME record lookup
-# or a reverse lookup at the PTR record) on records specified under the
-# `reverse` and `resolve` arrays.
+# or a reverse lookup at the PTR record) on the record specified in the
+# "source" field.
 #
 # The config should look like this:
-# [source,ruby]
+#
 #     filter {
 #       dns {
-#         type => 'type'
-#         reverse => [ "source_host", "field_with_address" ]
-#         resolve => [ "field_with_fqdn" ]
-#         action => "replace"
+#         source => [ "client_ip" ]
+#         target => [ "client_hostname" ]
 #       }
 #     }
 #
@@ -31,21 +29,26 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   milestone 2
 
   # Reverse resolve one or more fields.
-  config :reverse, :validate => :array
+  config :reverse, :validate => :array, :deprecated => "Please use the source and target options."
 
   # Forward resolve one or more fields.
-  config :resolve, :validate => :array
+  config :resolve, :validate => :array, :deprecated => "Please use the source and target options."
 
   # Determine what action to do: append or replace the values in the fields
-  # specified under `reverse` and `resolve`.
-  config :action, :validate => [ "append", "replace" ], :default => "append"
+  # specified under "reverse" and "resolve."
+  config :action, :validate => [ "append", "replace" ], :default => "append",
+    :deprecated => "Please use the source and target options."
+
+  # The field containing the hostname or ip address to look up.
+  # Use of source/target and reverse/resolve/action is mutually exclusive,
+  # source/target take precedence.
+  config :source, :validate => :string
+
+  # The field where the result should be written to.
+  config :target, :validate => :string, :default => "dns"
 
   # Use custom nameserver.
   config :nameserver, :validate => :string
-
-  # TODO(sissel): make `action` required? This was always the intent, but it
-  # due to a typo it was never enforced. Thus the default behavior in past
-  # versions was `append` by accident.
 
   # `resolv` calls will be wrapped in a timeout instance
   config :timeout, :validate => :number, :default => 2
@@ -69,27 +72,81 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
     new_event = event.clone
 
-    if @resolve
+    if @source
+      raw = new_event[@source]
+      if raw.is_a?(Array)
+        if raw.length > 1
+          @logger.warn("DNS: skipping resolve, can't deal with multiple values", :field => @source, :value => raw)
+          return
+        end
+        raw = raw.first
+      end
+
+      result = nil
+
       begin
-        status = Timeout::timeout(@timeout) {
-          resolve(new_event)
-        }
-        return if status.nil?
-      rescue Timeout::Error
-        @logger.debug("DNS: resolve action timed out")
+        if @ip_validator.match(raw)
+          status = Timeout::timeout(@timeout) {
+            result = @resolv.getname(raw)
+          }
+        else
+          status = Timeout::timeout(@timeout) {
+            result = @resolv.getaddress(raw)
+          }
+        end
+      rescue Resolv::ResolvError
+        @logger.debug("DNS: couldn't resolve",
+                      :field => field, :value => raw)
+        return
+      rescue Resolv::ResolvTimeout
+        @logger.debug("DNS: timeout on resolving the hostname.",
+                      :field => field, :value => raw)
+        return
+      rescue SocketError => e
+        @logger.debug("DNS: Encountered SocketError.",
+                      :field => field, :value => raw)
+        return
+      rescue NoMethodError => e
+        # see JRUBY-5647
+        @logger.debug("DNS: couldn't resolve the hostname.",
+                      :field => field, :value => raw,
+                      :extra => "NameError instead of ResolvError")
         return
       end
-    end
 
-    if @reverse
-      begin
-        status = Timeout::timeout(@timeout) {
-          reverse(new_event)
-        }
-        return if status.nil?
-      rescue Timeout::Error
-        @logger.debug("DNS: reverse action timed out")
-        return
+      # Explicit encode, as Resolv returns ASCII
+      result.encode!('UTF-8')
+
+      if @target.empty?
+        new_event["dns"] = result
+      else
+        new_event[@target] = result
+      end
+    else
+      # 'Old' functionality, remove when deprecated
+      if @resolve
+        begin
+          status = Timeout::timeout(@timeout) {
+            resolve(new_event)
+          }
+          return if status.nil?
+        rescue Timeout::Error
+          @logger.debug("DNS: resolve action timed out")
+          return
+        end
+      end
+
+      if @reverse
+        begin
+          status = Timeout::timeout(@timeout) {
+            reverse(new_event)
+          }
+          return if status.nil?
+        rescue Timeout::Error
+          @logger.debug("DNS: reverse action timed out")
+          return
+        end
+
       end
     end
 
@@ -98,6 +155,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
     event.cancel
   end
 
+  # When deprecating, these functions can be deleted
   private
   def resolve(event)
     @resolve.each do |field|
@@ -158,12 +216,12 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       raw = event[field]
       is_array = false
       if raw.is_a?(Array)
-          is_array = true
-          if raw.length > 1
-            @logger.warn("DNS: skipping reverse, can't deal with multiple values", :field => field, :value => raw)
-            return
-          end
-          raw = raw.first
+        is_array = true
+        if raw.length > 1
+          @logger.warn("DNS: skipping reverse, can't deal with multiple values", :field => field, :value => raw)
+          return
+        end
+        raw = raw.first
       end
 
       if ! @ip_validator.match(raw)
