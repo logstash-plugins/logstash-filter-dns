@@ -1,9 +1,4 @@
 # encoding: utf-8
-# DNS Filter
-#
-# This filter will resolve any IP addresses from a field of your choosing.
-#
-
 require "logstash/filters/base"
 require "logstash/namespace"
 
@@ -22,10 +17,18 @@ require "logstash/namespace"
 #       }
 #     }
 #
-# Caveats: at the moment, there's no way to tune the timeout with the `resolv`
-# core library.  It does seem to be fixed in here: http://redmine.ruby-lang.org/issues/5100
-# but isn't currently in JRuby.
+# Caveats: Currently there is no way to specify a timeout in the DNS lookup.
+# 
+# This filter, like all filters, only processes 1 event at a time, so the use
+# of this plugin can significantly slow down your pipeline's throughput if you
+# have a high latency network. By way of example, if each DNS lookup takes 2
+# milliseconds, the maximum throughput you can achieve with a single filter
+# worker is 500 events per second (1000 milliseconds / 2 milliseconds).
 class LogStash::Filters::DNS < LogStash::Filters::Base
+  # TODO(sissel): The timeout limitation does seem to be fixed in here: http://redmine.ruby-lang.org/issues/5100 # but isn't currently in JRuby.
+  # TODO(sissel): make `action` required? This was always the intent, but it
+  # due to a typo it was never enforced. Thus the default behavior in past
+  # versions was `append` by accident.
 
   config_name "dns"
 
@@ -41,10 +44,6 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   # Use custom nameserver.
   config :nameserver, :validate => :string
-
-  # TODO(sissel): make `action` required? This was always the intent, but it
-  # due to a typo it was never enforced. Thus the default behavior in past
-  # versions was `append` by accident.
 
   # `resolv` calls will be wrapped in a timeout instance
   config :timeout, :validate => :number, :default => 2
