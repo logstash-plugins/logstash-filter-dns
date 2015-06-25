@@ -42,8 +42,8 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # specified under `reverse` and `resolve`.
   config :action, :validate => [ "append", "replace" ], :default => "append"
 
-  # Use custom nameserver.
-  config :nameserver, :validate => :string
+  # Use custom nameserver(s).
+  config :nameservers, :validate => :array
 
   # `resolv` calls will be wrapped in a timeout instance
   config :timeout, :validate => :number, :default => 2
@@ -52,10 +52,10 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   def register
     require "resolv"
     require "timeout"
-    if @nameserver.nil?
+    if @nameservers.nil?
       @resolv = Resolv.new
     else
-      @resolv = Resolv.new(resolvers=[::Resolv::Hosts.new, ::Resolv::DNS.new(:nameserver => [@nameserver], :search => [], :ndots => 1)])
+      @resolv = Resolv.new(resolvers=[::Resolv::Hosts.new, ::Resolv::DNS.new(:nameserver => @nameservers, :search => [], :ndots => 1)])
     end
 
     @ip_validator = Resolv::AddressRegex
