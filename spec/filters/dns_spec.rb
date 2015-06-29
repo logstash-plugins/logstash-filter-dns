@@ -206,4 +206,36 @@ describe LogStash::Filters::DNS do
       insist { subject["foo"] } == "does.not.exist"
     end
   end
+
+  describe "dns resolve lookup, single custom nameserver" do
+    config <<-CONFIG
+      filter {
+        dns {
+          resolve => ["host"]
+          action => "replace"
+          nameserver => "8.8.8.8"
+        }
+      }
+    CONFIG
+
+    sample("host" => "carrera.databits.net") do
+      insist { subject["host"] } == "199.192.228.250"
+    end
+  end
+
+  describe "dns resolve lookup, multiple nameserver fallback" do
+    config <<-CONFIG
+      filter {
+        dns {
+          resolve => ["host"]
+          action => "replace"
+          nameserver => ["127.0.0.99", "8.8.8.8"]
+        }
+      }
+    CONFIG
+
+    sample("host" => "carrera.databits.net") do
+      insist { subject["host"] } == "199.192.228.250"
+    end
+  end
 end
