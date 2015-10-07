@@ -63,7 +63,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   public
   def filter(event)
-    return unless filter?(event)
+    
 
     new_event = event.clone
 
