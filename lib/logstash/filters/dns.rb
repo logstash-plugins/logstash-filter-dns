@@ -112,7 +112,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
       begin
         # in JRuby 1.7.11 outputs as US-ASCII
-        address = @resolv.getaddress(raw).force_encoding(Encoding::UTF_8)
+        address = @resolv.getaddress(raw).to_s.force_encoding(Encoding::UTF_8)
       rescue Resolv::ResolvError
         @logger.debug("DNS: couldn't resolve the hostname.",
                       :field => field, :value => raw)
@@ -171,7 +171,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       end
       begin
         # in JRuby 1.7.11 outputs as US-ASCII
-        hostname = @resolv.getname(raw).force_encoding(Encoding::UTF_8)
+        hostname = @resolv.getname(raw).to_s.force_encoding(Encoding::UTF_8)
       rescue Resolv::ResolvError
         @logger.debug("DNS: couldn't resolve the address.",
                       :field => field, :value => raw)
