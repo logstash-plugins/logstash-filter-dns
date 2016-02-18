@@ -89,7 +89,7 @@ describe LogStash::Filters::DNS do
 
     sample("host1" => "carrera.databits.net", "host2" => "nonexistanthostname###.net") do
       insist { subject["tags"] }.nil?
-      insist { subject["host1"] } == "carrera.databits.net"
+      insist { subject["host1"] } == "199.192.228.250"
       insist { subject["host2"] } == "nonexistanthostname###.net"
     end
   end
@@ -126,8 +126,8 @@ describe LogStash::Filters::DNS do
            "ip1" => "127.0.0.1",
            "ip2" => "128.0.0.1") do
       insist { subject["tags"] }.nil?
-      insist { subject["host1"] } == "carrera.databits.net"
-      insist { subject["ip1"] } == "127.0.0.1"
+      insist { subject["host1"] } == "199.192.228.250"
+      insist { subject["ip1"] } == "localhost"
       insist { subject["ip2"] } == "128.0.0.1"
     end
   end
@@ -236,6 +236,90 @@ describe LogStash::Filters::DNS do
 
     sample("host" => "carrera.databits.net") do
       insist { subject["host"] } == "199.192.228.250"
+    end
+  end
+
+  describe "dns resolve lookup, multiple nameserver fallback" do
+    config <<-CONFIG
+      filter {
+        dns {
+          resolve => ["host"]
+          action => "replace"
+          nameserver => ["127.0.0.99", "8.8.8.8"]
+        }
+      }
+    CONFIG
+
+    sample("host" => "carrera.databits.net") do
+      insist { subject["host"] } == "199.192.228.250"
+    end
+  end
+
+  describe "failed cache" do
+
+    let(:subject) { LogStash::Filters::DNS.new(config) }
+    let(:event1) { LogStash::Event.new("message" => "unkownhost") }
+    let(:event2) { LogStash::Event.new("message" => "unkownhost") }
+
+    before(:each) do
+      allow(subject).to receive(:getaddress).and_raise Resolv::ResolvError
+      subject.register
+    end
+
+    context "when enabled" do
+      let(:config) { { "resolve" => ["message"], "failed_cache_size" => 3 } }
+
+      it "should cache a failed lookup" do
+        expect(subject).to receive(:getaddress).once
+        event = LogStash::Event.new("message" => "unkownhost")
+        subject.filter(event1)
+        subject.filter(event2)
+      end
+    end
+
+    context "when disabled" do
+      let(:config) { { "resolve" => ["message"] } }
+
+      it "should not cache a failed lookup" do
+        expect(subject).to receive(:getaddress).twice
+        event = LogStash::Event.new("message" => "unkownhost")
+        subject.filter(event1)
+        subject.filter(event2)
+      end
+    end
+  end
+
+  describe "hit cache" do
+
+    let(:subject) { LogStash::Filters::DNS.new(config) }
+    let(:event1) { LogStash::Event.new("message" => "unkownhost") }
+    let(:event2) { LogStash::Event.new("message" => "unkownhost") }
+
+    before(:each) do
+      allow(subject).to receive(:getaddress).and_return("127.0.0.1")
+      subject.register
+    end
+
+    context "when enabled" do
+      let(:config) { { "resolve" => ["message"], "hit_cache_size" => 3 } }
+
+      it "should cache a succesful lookup" do
+        expect(subject).to receive(:getaddress).once
+        event = LogStash::Event.new("message" => "unkownhost")
+        subject.filter(event1)
+        subject.filter(event2)
+      end
+    end
+
+    context "when disabled" do
+      let(:config) { { "resolve" => ["message"] } }
+
+      it "should not cache a successful lookup" do
+        expect(subject).to receive(:getaddress).twice
+        event = LogStash::Event.new("message" => "unkownhost")
+        subject.filter(event1)
+        subject.filter(event2)
+      end
     end
   end
 end

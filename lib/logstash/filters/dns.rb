@@ -1,6 +1,8 @@
 # encoding: utf-8
 require "logstash/filters/base"
 require "logstash/namespace"
+require "lru_redux"
+
 
 # The DNS filter performs a lookup (either an A record/CNAME record lookup
 # or a reverse lookup at the PTR record) on records specified under the
@@ -18,7 +20,7 @@ require "logstash/namespace"
 #     }
 #
 # Caveats: Currently there is no way to specify a timeout in the DNS lookup.
-# 
+#
 # This filter, like all filters, only processes 1 event at a time, so the use
 # of this plugin can significantly slow down your pipeline's throughput if you
 # have a high latency network. By way of example, if each DNS lookup takes 2
@@ -46,7 +48,22 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   config :nameserver, :validate => :array
 
   # `resolv` calls will be wrapped in a timeout instance
-  config :timeout, :validate => :number, :default => 2
+  config :timeout, :validate => :number, :default => 0.5
+
+  # number of times to retry a failed resolve/reverse
+  config :max_retry, :validate => :number, :default => 2
+
+  # set the size of cache for successful requests
+  config :hit_cache_size, :validate => :number, :default => 0
+
+  # how long to cache successful requests (in seconds)
+  config :hit_cache_ttl, :validate => :number, :default => 60
+
+  # cache size for failed requests (Resolv::
+  config :failed_cache_size, :validate => :number, :default => 0
+
+  # how long to cache failed requests (in seconds)
+  config :failed_cache_ttl, :validate => :number, :default => 5
 
   public
   def register
@@ -58,42 +75,29 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       @resolv = Resolv.new(resolvers=[::Resolv::Hosts.new, ::Resolv::DNS.new(:nameserver => @nameserver, :search => [], :ndots => 1)])
     end
 
+    if @hit_cache_size > 0
+      @hit_cache = LruRedux::ThreadSafeCache.new(@hit_cache_size, @hit_cache_ttl)
+    end
+
+    if @failed_cache_size > 0
+      @failed_cache = LruRedux::ThreadSafeCache.new(@failed_cache_size, @failed_cache_ttl)
+    end
+
     @ip_validator = Resolv::AddressRegex
   end # def register
 
   public
   def filter(event)
-    
-
-    new_event = event.clone
 
     if @resolve
-      begin
-        status = Timeout::timeout(@timeout) {
-          resolve(new_event)
-        }
-        return if status.nil?
-      rescue Timeout::Error
-        @logger.debug("DNS: resolve action timed out")
-        return
-      end
+      return if resolve(event).nil?
     end
 
     if @reverse
-      begin
-        status = Timeout::timeout(@timeout) {
-          reverse(new_event)
-        }
-        return if status.nil?
-      rescue Timeout::Error
-        @logger.debug("DNS: reverse action timed out")
-        return
-      end
+      return if reverse(event).nil?
     end
 
-    filter_matched(new_event)
-    yield new_event
-    event.cancel
+    filter_matched(event)
   end
 
   private
@@ -111,25 +115,24 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       end
 
       begin
-        # in JRuby 1.7.11 outputs as US-ASCII
-        address = @resolv.getaddress(raw).force_encoding(Encoding::UTF_8)
+        return if @failed_cache && @failed_cache[raw] # recently failed resolv, skip
+        if @hit_cache
+          address = @hit_cache.getset(raw) { getaddress(raw) }
+        else
+          address = getaddress(raw)
+        end
       rescue Resolv::ResolvError
+        @failed_cache[raw] = true if @failed_cache
         @logger.debug("DNS: couldn't resolve the hostname.",
                       :field => field, :value => raw)
         return
-      rescue Resolv::ResolvTimeout
-        @logger.debug("DNS: timeout on resolving the hostname.",
+      rescue Resolv::ResolvTimeout, Timeout::Error
+        @logger.error("DNS: timeout on resolving the hostname.",
                       :field => field, :value => raw)
         return
       rescue SocketError => e
-        @logger.debug("DNS: Encountered SocketError.",
-                      :field => field, :value => raw)
-        return
-      rescue NoMethodError => e
-        # see JRUBY-5647
-        @logger.debug("DNS: couldn't resolve the hostname.",
-                      :field => field, :value => raw,
-                      :extra => "NameError instead of ResolvError")
+        @logger.error("DNS: Encountered SocketError.",
+                      :field => field, :value => raw, :message => e.message)
         return
       end
 
@@ -170,19 +173,24 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         return
       end
       begin
-        # in JRuby 1.7.11 outputs as US-ASCII
-        hostname = @resolv.getname(raw).force_encoding(Encoding::UTF_8)
+        return if @failed_cache && @failed_cache.key?(raw) # recently failed resolv, skip
+        if @hit_cache
+          hostname = @hit_cache.getset(raw) { getname(raw) }
+        else
+          hostname = getname(raw)
+        end
       rescue Resolv::ResolvError
+        @failed_cache[raw] = true if @failed_cache
         @logger.debug("DNS: couldn't resolve the address.",
                       :field => field, :value => raw)
         return
-      rescue Resolv::ResolvTimeout
-        @logger.debug("DNS: timeout on resolving address.",
+      rescue Resolv::ResolvTimeout, Timeout::Error
+        @logger.error("DNS: timeout on resolving address.",
                       :field => field, :value => raw)
         return
       rescue SocketError => e
-        @logger.debug("DNS: Encountered SocketError.",
-                      :field => field, :value => raw)
+        @logger.error("DNS: Encountered SocketError.",
+                      :field => field, :value => raw, :message => e.message)
         return
       end
 
@@ -199,6 +207,37 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
           event[field] << hostname
         end
       end
+    end
+  end
+
+  private
+  def retriable_request(&block)
+    tries = 0
+    begin
+      Timeout::timeout(@timeout) do
+        block.call
+      end
+    rescue Timeout::Error, SocketError
+      if tries < @max_retry
+        tries = tries + 1
+        retry
+      else
+        raise
+      end
+    end
+  end
+
+  private
+  def getname(name)
+    retriable_request do
+      @resolv.getname(name).force_encoding(Encoding::UTF_8)
+    end
+  end
+
+  private
+  def getaddress(address)
+    retriable_request do
+      @resolv.getaddress(address).force_encoding(Encoding::UTF_8)
     end
   end
 end # class LogStash::Filters::DNS
