@@ -271,7 +271,6 @@ describe LogStash::Filters::DNS do
 
       it "should cache a failed lookup" do
         expect(subject).to receive(:getaddress).once
-        event = LogStash::Event.new("message" => "unkownhost")
         subject.filter(event1)
         subject.filter(event2)
       end
@@ -282,7 +281,6 @@ describe LogStash::Filters::DNS do
 
       it "should not cache a failed lookup" do
         expect(subject).to receive(:getaddress).twice
-        event = LogStash::Event.new("message" => "unkownhost")
         subject.filter(event1)
         subject.filter(event2)
       end
@@ -305,7 +303,6 @@ describe LogStash::Filters::DNS do
 
       it "should cache a succesful lookup" do
         expect(subject).to receive(:getaddress).once
-        event = LogStash::Event.new("message" => "unkownhost")
         subject.filter(event1)
         subject.filter(event2)
       end
@@ -316,9 +313,48 @@ describe LogStash::Filters::DNS do
 
       it "should not cache a successful lookup" do
         expect(subject).to receive(:getaddress).twice
-        event = LogStash::Event.new("message" => "unkownhost")
         subject.filter(event1)
         subject.filter(event2)
+      end
+    end
+  end
+
+  describe "retries" do
+
+    let(:subject) { LogStash::Filters::DNS.new(config) }
+    let(:event) { LogStash::Event.new("message" => "unkownhost") }
+    let(:max_retries) { 3 }
+    let(:config) { { "resolve" => ["message"], "max_retries" => max_retries } }
+
+    before(:each) { subject.register }
+
+    context "when failing permanently" do
+      before(:each) do
+        allow(subject).to receive(:getaddress).and_raise(Timeout::Error)
+      end
+
+      it "should fail a resolve after max_retries" do
+        expect(subject).to receive(:getaddress).exactly(max_retries+1).times
+        subject.filter(event)
+      end
+    end
+
+    context "when failing temporarily" do
+      before(:each) do
+        allow(subject).to receive(:getaddress) do
+          @try ||= 0
+          if @try < 3
+            @try = @try + 1
+            raise Timeout::Error
+          else
+            return "127.0.0.1"
+          end
+        end
+      end
+
+      it "should resolve before max_retries" do
+        expect(subject).to receive(:getaddress).exactly(3).times
+        subject.filter(event)
       end
     end
   end

@@ -51,7 +51,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   config :timeout, :validate => :number, :default => 0.5
 
   # number of times to retry a failed resolve/reverse
-  config :max_retry, :validate => :number, :default => 2
+  config :max_retries, :validate => :number, :default => 2
 
   # set the size of cache for successful requests
   config :hit_cache_size, :validate => :number, :default => 0
@@ -117,9 +117,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       begin
         return if @failed_cache && @failed_cache[raw] # recently failed resolv, skip
         if @hit_cache
-          address = @hit_cache.getset(raw) { getaddress(raw) }
+          address = @hit_cache.getset(raw) { retriable_getaddress(raw) }
         else
-          address = getaddress(raw)
+          address = retriable_getaddress(raw)
         end
       rescue Resolv::ResolvError
         @failed_cache[raw] = true if @failed_cache
@@ -175,9 +175,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       begin
         return if @failed_cache && @failed_cache.key?(raw) # recently failed resolv, skip
         if @hit_cache
-          hostname = @hit_cache.getset(raw) { getname(raw) }
+          hostname = @hit_cache.getset(raw) { retriable_getname(raw) }
         else
-          hostname = getname(raw)
+          hostname = retriable_getname(raw)
         end
       rescue Resolv::ResolvError
         @failed_cache[raw] = true if @failed_cache
@@ -218,7 +218,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         block.call
       end
     rescue Timeout::Error, SocketError
-      if tries < @max_retry
+      if tries < @max_retries
         tries = tries + 1
         retry
       else
@@ -228,16 +228,26 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   end
 
   private
-  def getname(name)
+  def retriable_getname(address)
     retriable_request do
-      @resolv.getname(name).force_encoding(Encoding::UTF_8)
+      getname(address)
     end
   end
 
   private
-  def getaddress(address)
+  def retriable_getaddress(name)
     retriable_request do
-      @resolv.getaddress(address).force_encoding(Encoding::UTF_8)
+      getaddress(name)
     end
+  end
+
+  private
+  def getname(address)
+    @resolv.getname(address).force_encoding(Encoding::UTF_8)
+  end
+
+  private
+  def getaddress(name)
+    @resolv.getaddress(name).force_encoding(Encoding::UTF_8)
   end
 end # class LogStash::Filters::DNS
