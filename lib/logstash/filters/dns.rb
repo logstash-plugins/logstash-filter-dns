@@ -19,8 +19,6 @@ require "lru_redux"
 #       }
 #     }
 #
-# Caveats: Currently there is no way to specify a timeout in the DNS lookup.
-#
 # This filter, like all filters, only processes 1 event at a time, so the use
 # of this plugin can significantly slow down your pipeline's throughput if you
 # have a high latency network. By way of example, if each DNS lookup takes 2
