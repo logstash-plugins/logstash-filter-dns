@@ -343,11 +343,11 @@ describe LogStash::Filters::DNS do
       before(:each) do
         allow(subject).to receive(:getaddress) do
           @try ||= 0
-          if @try < 3
+          if @try < 2
             @try = @try + 1
             raise Timeout::Error
           else
-            return "127.0.0.1"
+            "127.0.0.1"
           end
         end
       end
