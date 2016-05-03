@@ -102,7 +102,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   def resolve(event)
     @resolve.each do |field|
       is_array = false
-      raw = event[field]
+      raw = event.get(field)
       if raw.is_a?(Array)
         is_array = true
         if raw.length > 1
@@ -136,15 +136,17 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
       if @action == "replace"
         if is_array
-          event[field] = [address]
+          event.set(field, [address])
         else
-          event[field] = address
+          event.set(field, address)
         end
       else
         if !is_array
-          event[field] = [event[field], address]
+          event.set(field, [event.get(field), address])
         else
-          event[field] << address
+          arr = event.get(field)
+          arr << address
+          event.set(field, arr)
         end
       end
 
@@ -154,7 +156,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   private
   def reverse(event)
     @reverse.each do |field|
-      raw = event[field]
+      raw = event.get(field)
       is_array = false
       if raw.is_a?(Array)
           is_array = true
@@ -167,7 +169,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
       if ! @ip_validator.match(raw)
         @logger.debug("DNS: not an address",
-                      :field => field, :value => event[field])
+                      :field => field, :value => event.get(field))
         return
       end
       begin
@@ -194,15 +196,17 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
       if @action == "replace"
         if is_array
-          event[field] = [hostname]
+          event.set(field, [hostname])
         else
-          event[field] = hostname
+          event.set(field, hostname)
         end
       else
         if !is_array
-          event[field] = [event[field], hostname]
+          event.set(field, [event.get(field), hostname])
         else
-          event[field] << hostname
+          arr = event.get(field)
+          arr << hostname
+          event.set(field, arr)
         end
       end
     end

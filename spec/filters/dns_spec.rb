@@ -25,7 +25,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => "199.192.228.250") do
-      insist { subject["foo"] } == "carrera.databits.net"
+      insist { subject.get("foo") } == "carrera.databits.net"
     end
   end
 
@@ -40,8 +40,8 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => "199.192.228.250") do
-      insist { subject["foo"][0] } == "199.192.228.250"
-      insist { subject["foo"][1] } == "carrera.databits.net"
+      insist { subject.get("foo")[0] } == "199.192.228.250"
+      insist { subject.get("foo")[1] } == "carrera.databits.net"
     end
   end
 
@@ -55,7 +55,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => "not.an.ip") do
-      insist { subject["foo"] } == "not.an.ip"
+      insist { subject.get("foo") } == "not.an.ip"
     end
   end
 
@@ -71,8 +71,8 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("host" => "carrera.databits.net") do
-      insist { subject["host"] } == "199.192.228.250"
-      insist { subject["tags"] } == ["success"]
+      insist { subject.get("host") } == "199.192.228.250"
+      insist { subject.get("tags") } == ["success"]
     end
   end
 
@@ -88,9 +88,9 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("host1" => "carrera.databits.net", "host2" => "nonexistanthostname###.net") do
-      insist { subject["tags"] }.nil?
-      insist { subject["host1"] } == "199.192.228.250"
-      insist { subject["host2"] } == "nonexistanthostname###.net"
+      insist { subject.get("tags") }.nil?
+      insist { subject.get("host1") } == "199.192.228.250"
+      insist { subject.get("host2") } == "nonexistanthostname###.net"
     end
   end
 
@@ -106,7 +106,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("host1" => "carrera.databits.net", "host2" => "carrera.databits.net") do
-      insist { subject["tags"] } == ["success"]
+      insist { subject.get("tags") } == ["success"]
     end
   end
 
@@ -125,10 +125,10 @@ describe LogStash::Filters::DNS do
     sample("host1" => "carrera.databits.net",
            "ip1" => "127.0.0.1",
            "ip2" => "128.0.0.1") do
-      insist { subject["tags"] }.nil?
-      insist { subject["host1"] } == "199.192.228.250"
-      insist { subject["ip1"] } == "localhost"
-      insist { subject["ip2"] } == "128.0.0.1"
+      insist { subject.get("tags") }.nil?
+      insist { subject.get("host1") } == "199.192.228.250"
+      insist { subject.get("ip1") } == "localhost"
+      insist { subject.get("ip2") } == "128.0.0.1"
     end
   end
 
@@ -143,7 +143,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => "carrera.databits.net") do
-      insist { subject["foo"] } == "199.192.228.250"
+      insist { subject.get("foo") } == "199.192.228.250"
     end
   end
 
@@ -158,7 +158,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => ["carrera.databits.net", "foo.databits.net"]) do
-      insist { subject["foo"] } == ["carrera.databits.net", "foo.databits.net"]
+      insist { subject.get("foo") } == ["carrera.databits.net", "foo.databits.net"]
     end
   end
 
@@ -173,8 +173,8 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => "carrera.databits.net") do
-      insist { subject["foo"][0] } == "carrera.databits.net"
-      insist { subject["foo"][1] } == "199.192.228.250"
+      insist { subject.get("foo")[0] } == "carrera.databits.net"
+      insist { subject.get("foo")[1] } == "199.192.228.250"
     end
   end
 
@@ -189,7 +189,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => ["carrera.databits.net", "foo.databits.net"]) do
-      insist { subject["foo"] } == ["carrera.databits.net", "foo.databits.net"]
+      insist { subject.get("foo") } == ["carrera.databits.net", "foo.databits.net"]
     end
   end
 
@@ -203,7 +203,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("foo" => "does.not.exist") do
-      insist { subject["foo"] } == "does.not.exist"
+      insist { subject.get("foo") } == "does.not.exist"
     end
   end
 
@@ -219,7 +219,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("host" => "carrera.databits.net") do
-      insist { subject["host"] } == "199.192.228.250"
+      insist { subject.get("host") } == "199.192.228.250"
     end
   end
 
@@ -235,7 +235,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("host" => "carrera.databits.net") do
-      insist { subject["host"] } == "199.192.228.250"
+      insist { subject.get("host") } == "199.192.228.250"
     end
   end
 
@@ -251,7 +251,7 @@ describe LogStash::Filters::DNS do
     CONFIG
 
     sample("host" => "carrera.databits.net") do
-      insist { subject["host"] } == "199.192.228.250"
+      insist { subject.get("host") } == "199.192.228.250"
     end
   end
 
