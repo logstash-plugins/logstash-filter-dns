@@ -6,7 +6,7 @@ require "lru_redux"
 
 # The DNS filter performs a lookup (either an A record/CNAME record lookup
 # or a reverse lookup at the PTR record) on records specified under the
-# `reverse` and `resolve` arrays.
+# `reverse` arrays or respectively under the `resolve` arrays.
 #
 # The config should look like this:
 # [source,ruby]
