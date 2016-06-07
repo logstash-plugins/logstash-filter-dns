@@ -2,6 +2,10 @@
 require "logstash/filters/base"
 require "logstash/namespace"
 require "lru_redux"
+require "resolv"
+require "timeout"
+
+java_import 'java.net.IDN'
 
 
 # The DNS filter performs a lookup (either an A record/CNAME record lookup
@@ -62,14 +66,15 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # how long to cache failed requests (in seconds)
   config :failed_cache_ttl, :validate => :number, :default => 5
 
+  # Use custom hosts file(s). For example: `["/var/db/my_custom_hosts"]`
+  config :hostsfile, :validate => :array
+
   public
   def register
-    require "resolv"
-    require "timeout"
-    if @nameserver.nil?
+    if @nameserver.nil? && @hostsfile.nil?
       @resolv = Resolv.new
     else
-      @resolv = Resolv.new(resolvers=[::Resolv::Hosts.new, ::Resolv::DNS.new(:nameserver => @nameserver, :search => [], :ndots => 1)])
+      @resolv = Resolv.new(build_resolvers)
     end
 
     if @hit_cache_size > 0
@@ -98,6 +103,21 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   end
 
   private
+
+  def build_resolvers
+    build_user_host_resolvers.concat([::Resolv::Hosts.new]).concat(build_user_dns_resolver)
+  end
+
+  def build_user_host_resolvers
+    return [] if @hostsfile.nil? || @hostsfile.empty?
+    @hostsfile.map{|fn| ::Resolv::Hosts.new(fn)}
+  end
+
+  def build_user_dns_resolver
+    return [] if @nameserver.nil? || @nameserver.empty?
+    [::Resolv::DNS.new(:nameserver => @nameserver, :search => [], :ndots => 1)]
+  end
+
   def resolve(event)
     @resolve.each do |field|
       is_array = false
@@ -244,11 +264,13 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   private
   def getname(address)
-    @resolv.getname(address).force_encoding(Encoding::UTF_8)
+    name = @resolv.getname(address).force_encoding(Encoding::UTF_8)
+    IDN.toUnicode(name)
   end
 
   private
   def getaddress(name)
-    @resolv.getaddress(name).force_encoding(Encoding::UTF_8)
+    idn = IDN.toASCII(name)
+    @resolv.getaddress(idn).force_encoding(Encoding::UTF_8)
   end
 end # class LogStash::Filters::DNS
