@@ -1,3 +1,6 @@
+## 3.0.3
+  - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
+
 ## 3.0.2
   - Add support for International Domain Names e.g. müller.com. Fixes https://github.com/logstash-plugins/logstash-filter-dns/issues/22
   - Add support for custom hosts files (helps with testing but could be useful to some folks).
