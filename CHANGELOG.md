@@ -1,3 +1,6 @@
+## 3.0.4 
+  - Fix race condition described at https://github.com/logstash-plugins/logstash-filter-dns/issues/26 by adding extra locking around the dns resolve operations that trigger the problem, this makes the concurrency issue when reading the host file go.
+
 ## 3.0.3
   - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
 
