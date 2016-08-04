@@ -86,6 +86,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
     end
 
     @ip_validator = Resolv::AddressRegex
+    @mutex        = Mutex.new
   end # def register
 
   public
@@ -264,13 +265,20 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   private
   def getname(address)
-    name = @resolv.getname(address).force_encoding(Encoding::UTF_8)
+    name = nil
+    @mutex.synchronize {
+      name = @resolv.getname(address).force_encoding(Encoding::UTF_8)
+    }
     IDN.toUnicode(name)
   end
 
   private
   def getaddress(name)
     idn = IDN.toASCII(name)
-    @resolv.getaddress(idn).force_encoding(Encoding::UTF_8)
+    addr = nil
+    @mutex.synchronize {
+      addr = @resolv.getaddress(idn).force_encoding(Encoding::UTF_8)
+    }
+    addr
   end
 end # class LogStash::Filters::DNS
