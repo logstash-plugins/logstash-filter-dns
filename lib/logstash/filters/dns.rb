@@ -195,11 +195,13 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       end
       begin
         return if @failed_cache && @failed_cache.key?(raw) # recently failed resolv, skip
+        timer.start
         if @hit_cache
           hostname = @hit_cache.getset(raw) { retriable_getname(raw) }
         else
           hostname = retriable_getname(raw)
         end
+        slow_logger("filters.dns.getaddress", timer.stop)
       rescue Resolv::ResolvError
         @failed_cache[raw] = true if @failed_cache
         @logger.debug("DNS: couldn't resolve the address.",
