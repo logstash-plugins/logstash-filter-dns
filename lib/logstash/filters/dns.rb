@@ -78,11 +78,11 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
     end
 
     if @hit_cache_size > 0
-      @hit_cache = LruRedux::ThreadSafeCache.new(@hit_cache_size, @hit_cache_ttl)
+      @hit_cache = LruRedux::TTL::ThreadSafeCache.new(@hit_cache_size, @hit_cache_ttl)
     end
 
     if @failed_cache_size > 0
-      @failed_cache = LruRedux::ThreadSafeCache.new(@failed_cache_size, @failed_cache_ttl)
+      @failed_cache = LruRedux::TTL::ThreadSafeCache.new(@failed_cache_size, @failed_cache_ttl)
     end
 
     @ip_validator = Resolv::AddressRegex
