@@ -60,7 +60,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # how long to cache successful requests (in seconds)
   config :hit_cache_ttl, :validate => :number, :default => 60
 
-  # cache size for failed requests (Resolv::
+  # cache size for failed requests
   config :failed_cache_size, :validate => :number, :default => 0
 
   # how long to cache failed requests (in seconds)
