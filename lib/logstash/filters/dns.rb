@@ -133,11 +133,13 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
       begin
         return if @failed_cache && @failed_cache[raw] # recently failed resolv, skip
+        timer.start
         if @hit_cache
           address = @hit_cache.getset(raw) { retriable_getaddress(raw) }
         else
           address = retriable_getaddress(raw)
         end
+        slow_logger("slowlog.filters.dns.warn", timer.stop)
       rescue Resolv::ResolvError
         @failed_cache[raw] = true if @failed_cache
         @logger.debug("DNS: couldn't resolve the hostname.",
@@ -193,11 +195,13 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       end
       begin
         return if @failed_cache && @failed_cache.key?(raw) # recently failed resolv, skip
+        start_time = Time.now
         if @hit_cache
           hostname = @hit_cache.getset(raw) { retriable_getname(raw) }
         else
           hostname = retriable_getname(raw)
         end
+        slow_logger("slowlog.filters.dns.warn", Time.now, start_time)
       rescue Resolv::ResolvError
         @failed_cache[raw] = true if @failed_cache
         @logger.debug("DNS: couldn't resolve the address.",
