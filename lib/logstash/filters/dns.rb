@@ -3,6 +3,7 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require "lru_redux"
 require "resolv"
+require_relative "dns/resolv_patch"
 require "timeout"
 
 java_import 'java.net.IDN'
@@ -28,7 +29,10 @@ java_import 'java.net.IDN'
 # milliseconds, the maximum throughput you can achieve with a single filter
 # worker is 500 events per second (1000 milliseconds / 2 milliseconds).
 class LogStash::Filters::DNS < LogStash::Filters::Base
-  # TODO(sissel): The timeout limitation does seem to be fixed in here: http://redmine.ruby-lang.org/issues/5100 # but isn't currently in JRuby.
+
+  # TODO(purbon): timeout is a feature of ruby 2.0, not present in version < 2.0. However for LS who is still running in 1.9 mode for the next
+  # feature, this module requires a patch to add timeout in similar fashion as the 2.0 code branch. When we update LS to use the 2.0 code base, 
+  # we can just remove the patch and the behaviour is not expected to change. Issue reference for mri http://redmine.ruby-lang.org/issues/5100 
   # TODO(sissel): make `action` required? This was always the intent, but it
   # due to a typo it was never enforced. Thus the default behavior in past
   # versions was `append` by accident.
@@ -115,7 +119,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   def build_user_dns_resolver
     return [] if @nameserver.nil? || @nameserver.empty?
-    [::Resolv::DNS.new(:nameserver => @nameserver, :search => [], :ndots => 1)]
+    dns_resolver = ::Resolv::DNS.new(:nameserver => @nameserver, :search => [], :ndots => 1)
+    dns_resolver.timeouts = @timeout
+    [dns_resolver]
   end
 
   def resolve(event)
@@ -203,7 +209,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         @logger.debug("DNS: couldn't resolve the address.",
                       :field => field, :value => raw)
         return
-      rescue Resolv::ResolvTimeout, Timeout::Error
+      rescue Resolv::ResolvTimeout
         @logger.error("DNS: timeout on resolving address.",
                       :field => field, :value => raw)
         return
@@ -235,10 +241,8 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   def retriable_request(&block)
     tries = 0
     begin
-      Timeout::timeout(@timeout) do
         block.call
-      end
-    rescue Timeout::Error, SocketError
+    rescue Resolv::ResolvTimeout, SocketError
       if tries < @max_retries
         tries = tries + 1
         retry

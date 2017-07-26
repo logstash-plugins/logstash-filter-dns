@@ -331,7 +331,7 @@ describe LogStash::Filters::DNS do
 
       context "when failing permanently" do
         before(:each) do
-          allow(subject).to receive(:getaddress).and_raise(Timeout::Error)
+          allow(subject).to receive(:getaddress).and_raise(Resolv::ResolvTimeout)
         end
 
         it "should fail a resolve after max_retries" do
@@ -346,7 +346,7 @@ describe LogStash::Filters::DNS do
             @try ||= 0
             if @try < 2
               @try = @try + 1
-              raise Timeout::Error
+              raise  Resolv::ResolvTimeout
             else
               "127.0.0.1"
             end
