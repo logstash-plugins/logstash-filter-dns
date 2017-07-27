@@ -1,3 +1,6 @@
+## 3.0.4
+  - Log a warning on missing resolve/reverse fields rather than crashing
+
 ## 3.0.3
   - Relax constraint on logstash-core-plugin-api to >= 1.60 <= 2.99
 

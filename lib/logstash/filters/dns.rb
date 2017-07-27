@@ -122,6 +122,12 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
     @resolve.each do |field|
       is_array = false
       raw = event.get(field)
+
+      if raw.nil?
+        @logger.warn("DNS filter could not resolve missing field", :field => field)
+        next
+      end
+
       if raw.is_a?(Array)
         is_array = true
         if raw.length > 1
@@ -176,6 +182,12 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   def reverse(event)
     @reverse.each do |field|
       raw = event.get(field)
+
+      if raw.nil?
+        @logger.warn("DNS filter could not perform reverse lookup on missing field", :field => field)
+        next
+      end
+
       is_array = false
       if raw.is_a?(Array)
           is_array = true

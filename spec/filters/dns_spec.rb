@@ -30,6 +30,27 @@ describe LogStash::Filters::DNS do
       end
     end
 
+    describe "dns reverse lookup, missing field" do
+      let(:plugin) { ::LogStash::Filters::DNS.new("reverse" => "foo") }
+      let(:event) { ::LogStash::Event.new }
+
+      before do
+        plugin.register
+        allow(plugin.logger).to receive(:warn).with(any_args)
+      end
+
+      it "should not throw an error when filtering" do
+        expect do
+          plugin.filter(event)
+        end.not_to raise_error
+      end
+
+      it "should log a warning" do
+        plugin.filter(event)
+        expect(plugin.logger).to have_received(:warn).with("DNS filter could not perform reverse lookup on missing field", :field => "foo")
+      end
+    end
+
     describe "dns reverse lookup, append" do
       config <<-CONFIG
         filter {
@@ -74,6 +95,27 @@ describe LogStash::Filters::DNS do
       sample("host" => "carrera.databits.net") do
         insist { subject.get("host") } == "199.192.228.250"
         insist { subject.get("tags") } == ["success"]
+      end
+    end
+
+    describe "dns resolve lookup, missing field" do
+      let(:plugin) { ::LogStash::Filters::DNS.new("resolve" => "foo") }
+      let(:event) { ::LogStash::Event.new }
+
+      before do
+        plugin.register
+        allow(plugin.logger).to receive(:warn).with(any_args)
+      end
+
+      it "should not throw an error when filtering" do
+        expect do
+          plugin.filter(event)
+        end.not_to raise_error
+      end
+
+      it "should log a warning" do
+        plugin.filter(event)
+        expect(plugin.logger).to have_received(:warn).with("DNS filter could not resolve missing field", :field => "foo")
       end
     end
 
