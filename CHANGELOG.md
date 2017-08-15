@@ -1,3 +1,6 @@
+## 3.0.6
+  - Fix some documentation issues
+
 ## 3.0.4
   - Log a warning on missing resolve/reverse fields rather than crashing
 
