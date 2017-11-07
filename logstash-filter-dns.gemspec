@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
 
   s.name            = 'logstash-filter-dns'
-  s.version         = '3.0.6'
+  s.version         = '3.0.7'
   s.licenses        = ['Apache License (2.0)']
-  s.summary         = "This filter will resolve any IP addresses from a field of your choosing."
+  s.summary         = "Performs a standard or reverse DNS lookup"
   s.description     = "This gem is a Logstash plugin required to be installed on top of the Logstash core pipeline using $LS_HOME/bin/logstash-plugin install gemname. This gem is not a stand-alone program"
   s.authors         = ["Elastic"]
   s.email           = 'info@elastic.co'
