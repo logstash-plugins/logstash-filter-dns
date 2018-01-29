@@ -282,7 +282,11 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   private
   def getaddress(name)
-    idn = IDN.toASCII(name)
+        idn = IDN.toASCII(name)
+  rescue java.lang.IllegalArgumentException => e
+    @logger.error("DNS: Illegal character in the input value.",
+                   :field => field, :value => raw)
+    return
     @resolv.getaddress(idn).force_encoding(Encoding::UTF_8)
   end
 end # class LogStash::Filters::DNS
