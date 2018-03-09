@@ -364,10 +364,11 @@ describe LogStash::Filters::DNS do
 
     describe "retries" do
 
+      let(:host) { "unknownhost" }
       let(:subject) { LogStash::Filters::DNS.new(config) }
-      let(:event) { LogStash::Event.new("message" => "unkownhost") }
+      let(:event) { LogStash::Event.new("message" => host) }
       let(:max_retries) { 3 }
-      let(:config) { { "resolve" => ["message"], "max_retries" => max_retries } }
+      let(:config) { { "resolve" => ["message"], "max_retries" => max_retries, "failed_cache_size" => 10 } }
 
       before(:each) { subject.register }
 
@@ -379,6 +380,12 @@ describe LogStash::Filters::DNS do
         it "should fail a resolve after max_retries" do
           expect(subject).to receive(:getaddress).exactly(max_retries+1).times
           subject.filter(event)
+        end
+
+        it "should cache the timeout" do
+          expect do
+            subject.filter(event)
+          end.to change { subject.failed_cache[host] }.from(nil).to(true)
         end
       end
 

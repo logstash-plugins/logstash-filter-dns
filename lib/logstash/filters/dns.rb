@@ -69,6 +69,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # Use custom hosts file(s). For example: `["/var/db/my_custom_hosts"]`
   config :hostsfile, :validate => :array
 
+  attr_reader :hit_cache
+  attr_reader :failed_cache
+
   public
   def register
     if @nameserver.nil? && @hostsfile.nil?
@@ -90,7 +93,6 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   public
   def filter(event)
-
     if @resolve
       return if resolve(event).nil?
     end
