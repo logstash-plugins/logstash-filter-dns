@@ -1,3 +1,6 @@
+## 3.0.8
+  - Fix bug where forward lookups would not cache timeout errors
+
 ## 3.0.7
   - Update gemspec summary
 
