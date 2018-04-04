@@ -1,5 +1,5 @@
 ## 3.0.9
-  - PR 36 - Logging improvement to include DNS resolution failure reason
+  - Logging improvement to include DNS resolution failure reason #36
 
 ## 3.0.8
   - Fix bug where forward lookups would not cache timeout errors
