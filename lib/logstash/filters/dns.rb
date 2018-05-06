@@ -142,7 +142,13 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       begin
         return if @failed_cache && @failed_cache[raw] # recently failed resolv, skip
         if @hit_cache
-          address = @hit_cache.getset(raw) { retriable_getaddress(raw) }
+          address = @hit_cache[raw]
+          if address.nil?
+            address = retriable_getaddress(raw)
+            unless address.nil?
+              @hit_cache[raw] = address
+            end
+          end
         else
           address = retriable_getaddress(raw)
         end
@@ -209,7 +215,13 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       begin
         return if @failed_cache && @failed_cache.key?(raw) # recently failed resolv, skip
         if @hit_cache
-          hostname = @hit_cache.getset(raw) { retriable_getname(raw) }
+          hostname = @hit_cache[raw]
+          if hostname.nil?
+            hostname = retriable_getname(raw)
+            unless hostname.nil?
+              @hit_cache[raw] = hostname
+            end
+          end
         else
           hostname = retriable_getname(raw)
         end
