@@ -144,8 +144,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         if @hit_cache
           address = @hit_cache[raw]
           if address.nil?
-            address = retriable_getaddress(raw)
-            unless address.nil?
+            if address = retriable_getaddress(raw)
               @hit_cache[raw] = address
             end
           end
@@ -217,8 +216,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         if @hit_cache
           hostname = @hit_cache[raw]
           if hostname.nil?
-            hostname = retriable_getname(raw)
-            unless hostname.nil?
+            if hostname = retriable_getname(raw)
               @hit_cache[raw] = hostname
             end
           end
