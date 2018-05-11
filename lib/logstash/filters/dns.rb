@@ -158,7 +158,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         return
       rescue Resolv::ResolvTimeout, Timeout::Error
         @failed_cache[raw] = true if @failed_cache
-        @logger.error("DNS: timeout on resolving the hostname.",
+        @logger.warn("DNS: timeout on resolving the hostname.",
                       :field => field, :value => raw)
         return
       rescue SocketError => e
@@ -230,7 +230,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         return
       rescue Resolv::ResolvTimeout, Timeout::Error
         @failed_cache[raw] = true if @failed_cache
-        @logger.error("DNS: timeout on resolving address.",
+        @logger.warn("DNS: timeout on resolving address.",
                       :field => field, :value => raw)
         return
       rescue SocketError => e
