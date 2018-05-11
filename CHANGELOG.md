@@ -1,3 +1,7 @@
+## 3.0.10
+  - Log timeouts as warn instead of error #43
+  - Allow concurrent queries when cache enabled #42
+
 ## 3.0.9
   - Logging improvement to include DNS resolution failure reason #36
 
