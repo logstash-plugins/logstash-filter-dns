@@ -1,3 +1,6 @@
+## 3.0.11
+  - Fixed JRuby resolver bug for versions prior to 9.1.16.0 [#45](https://github.com/logstash-plugins/logstash-filter-dns/pull/45)
+
 ## 3.0.10
   - Log timeouts as warn instead of error #43
   - Allow concurrent queries when cache enabled #42
