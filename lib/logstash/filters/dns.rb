@@ -4,6 +4,7 @@ require "logstash/namespace"
 require "lru_redux"
 require "resolv"
 require "timeout"
+require "logstash/filters/resolv_patch"
 
 java_import 'java.net.IDN'
 
