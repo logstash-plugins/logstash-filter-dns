@@ -123,7 +123,6 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   def resolve(event)
     @resolve.each do |field|
-      is_array = false
       raw = event.get(field)
 
       if raw.nil?
@@ -132,7 +131,6 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       end
 
       if raw.is_a?(Array)
-        is_array = true
         if raw.length > 1
           @logger.warn("DNS: skipping resolve, can't deal with multiple values", :field => field, :value => raw)
           return
@@ -169,19 +167,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       end
 
       if @action == "replace"
-        if is_array
-          event.set(field, [address])
-        else
-          event.set(field, address)
-        end
+        event.set(field, address)
       else
-        if !is_array
-          event.set(field, [event.get(field), address])
-        else
-          arr = event.get(field)
-          arr << address
-          event.set(field, arr)
-        end
+        event.set(field, [event.get(field), address])
       end
 
     end
@@ -197,14 +185,12 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         next
       end
 
-      is_array = false
       if raw.is_a?(Array)
-          is_array = true
-          if raw.length > 1
-            @logger.warn("DNS: skipping reverse, can't deal with multiple values", :field => field, :value => raw)
-            return
-          end
-          raw = raw.first
+        if raw.length > 1
+          @logger.warn("DNS: skipping reverse, can't deal with multiple values", :field => field, :value => raw)
+          return
+        end
+        raw = raw.first
       end
 
       if ! @ip_validator.match(raw)
@@ -241,19 +227,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
       end
 
       if @action == "replace"
-        if is_array
-          event.set(field, [hostname])
-        else
-          event.set(field, hostname)
-        end
+        event.set(field, hostname)
       else
-        if !is_array
-          event.set(field, [event.get(field), hostname])
-        else
-          arr = event.get(field)
-          arr << hostname
-          event.set(field, arr)
-        end
+        event.set(field, [event.get(field), hostname])
       end
     end
   end
