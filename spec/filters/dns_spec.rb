@@ -389,6 +389,14 @@ describe LogStash::Filters::DNS do
         end
       end
 
+      context 'with a label too long' do
+        let(:host) { "#{'0' * 64}.com" }
+
+        it 'should not raise' do
+          subject.filter(event)
+        end
+      end
+
       context "when failing temporarily" do
         before(:each) do
           allow(subject).to receive(:getaddress) do

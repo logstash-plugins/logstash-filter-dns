@@ -166,6 +166,14 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         @logger.error("DNS: Encountered SocketError.",
                       :field => field, :value => raw, :message => e.message)
         return
+      rescue Java::JavaLang::IllegalArgumentException => e
+        @logger.error("DNS: Unable to parse address.",
+                      :field => field, :value => raw, :message => e.message)
+        return
+      rescue => e
+        @logger.error("DNS: Unexpected Error.",
+                      :field => field, :value => raw, :message => e.message)
+        return
       end
 
       if @action == "replace"
@@ -236,6 +244,14 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         return
       rescue SocketError => e
         @logger.error("DNS: Encountered SocketError.",
+                      :field => field, :value => raw, :message => e.message)
+        return
+      rescue Java::JavaLang::IllegalArgumentException => e
+        @logger.error("DNS: Unable to parse address.",
+                      :field => field, :value => raw, :message => e.message)
+        return
+      rescue => e
+        @logger.error("DNS: Unexpected Error.",
                       :field => field, :value => raw, :message => e.message)
         return
       end
