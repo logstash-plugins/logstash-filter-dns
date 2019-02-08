@@ -55,7 +55,7 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-hit_cache_ttl>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-hostsfile>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-max_retries>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-nameserver>> |<<array,array>>|No
+| <<plugins-{type}s-{plugin}-nameserver>> |<<hash,hash>>|No
 | <<plugins-{type}s-{plugin}-resolve>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-reverse>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-timeout>> |<<number,number>>|No
@@ -126,10 +126,24 @@ number of times to retry a failed resolve/reverse
 [id="plugins-{type}s-{plugin}-nameserver"]
 ===== `nameserver` 
 
-  * Value type is <<array,array>>
+  * Value type is <<hash,hash>>, and is composed of:
+    * a required `address` key, whose value is either a <<string,string>> or an <<array,array>>, representing one or more nameserver ip addresses
+    * an optional `search` key, whose value is either a <<string,string>> or an <<array,array>>, representing between one and six search domains (e.g., with search domain `com`, a query for `example` will match DNS entries for `example.com`)
+    * an optional `ndots` key, used in conjunction with `search`, whose value is a <<number,number>>, representing the minimum number of dots in a domain name being resolved that will _prevent_ the search domains from being used (default `1`; this option is rarely needed)
+  * For backward-compatibility, values of <<string,string>> and <<array,array>> are also accepted, representing one or more nameserver ip addresses _without_ search domains.
   * There is no default value for this setting.
 
-Use custom nameserver(s). For example: `["8.8.8.8", "8.8.4.4"]`
+Use custom nameserver(s). For example:
+
+[source]
+    filter {
+      dns {
+        nameserver => {
+          address => ["8.8.8.8", "8.8.4.4"]
+          search  => ["internal.net"]
+        }
+      }
+    }
 
 [id="plugins-{type}s-{plugin}-resolve"]
 ===== `resolve` 

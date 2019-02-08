@@ -118,7 +118,32 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   def build_user_dns_resolver
     return [] if @nameserver.nil? || @nameserver.empty?
-    [::Resolv::DNS.new(:nameserver => @nameserver, :search => [], :ndots => 1)]
+
+    [::Resolv::DNS.new(normalised_nameserver)]
+  end
+
+  def normalised_nameserver
+    nameserver_hash = @nameserver.kind_of?(Hash) ? @nameserver.dup : { 'address' => @nameserver }
+
+    nameserver = nameserver_hash.delete('address') || fail(LogStash::ConfigurationError, "DNS Filter: `nameserver` hash must include `address` (got `#{@nameserver}`)")
+    nameserver = Array(nameserver).map(&:to_s)
+    nameserver.empty? && fail(LogStash::ConfigurationError, "DNS Filter: `nameserver` addresses, when specified, cannot be empty (got `#{@nameserver}`)")
+
+    search     = nameserver_hash.delete('search') || []
+    search     = Array(search).map(&:to_s)
+    search.size > 6 && fail(LogStash::ConfigurationError, "DNS Filter: A maximum of 6 `search` domains are accepted (got `#{@nameserver}`)")
+
+    ndots      = nameserver_hash.delete('ndots') || 1
+    ndots      = Integer(ndots)
+    ndots <= 0 && fail(LogStash::ConfigurationError, "DNS Filter: ndots must be positive (got `#{@nameserver}`)")
+
+    fail(LogStash::ConfigurationError, "Unknown `nameserver` argument(s): #{nameserver_hash}") unless nameserver_hash.empty?
+
+    {
+      :nameserver => nameserver,
+      :search     => search,
+      :ndots      => ndots
+    }
   end
 
   def resolve(event)
