@@ -1,3 +1,7 @@
+## 3.0.12
+  - Fixed issue where unqualified domains would fail to resolve when running this plugin with Logstash 5.x [#48](https://github.com/logstash-plugins/logstash-filter-dns/pull/48)
+  - Fixed crash that could occur when encountering certain classes of invalid inputs [#49](https://github.com/logstash-plugins/logstash-filter-dns/pull/49)
+
 ## 3.0.11
   - Fixed JRuby resolver bug for versions prior to 9.1.16.0 [#45](https://github.com/logstash-plugins/logstash-filter-dns/pull/45)
 

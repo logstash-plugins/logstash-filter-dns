@@ -1,5 +1,7 @@
 require "resolv"
 
+jruby_gem_version = Gem::Version.new(JRUBY_VERSION)
+
 # ref: https://github.com/logstash-plugins/logstash-filter-dns/issues/40
 #
 # JRuby 9k versions prior to 9.1.16.0 have a bug which crashes IP address
@@ -10,10 +12,7 @@ require "resolv"
 #
 # The code below is copied from JRuby 9.1.16.0 resolv.rb:
 # https://github.com/jruby/jruby/blob/9.1.16.0/lib/ruby/stdlib/resolv.rb#L775-L784
-
-JRUBY_GEM_VERSION = Gem::Version.new(JRUBY_VERSION)
-
-if JRUBY_GEM_VERSION >= Gem::Version.new("9.1.13.0") && JRUBY_GEM_VERSION < Gem::Version.new("9.1.16.0")
+if jruby_gem_version >= Gem::Version.new("9.1.13.0") && jruby_gem_version < Gem::Version.new("9.1.16.0")
   class Resolv
     class DNS
       class Requester
@@ -30,6 +29,31 @@ if JRUBY_GEM_VERSION >= Gem::Version.new("9.1.13.0") && JRUBY_GEM_VERSION < Gem:
           end
         end
       end
+    end
+  end
+end
+
+# JRuby 1.x ships with a Ruby stdlib that has a bug in its resolv implementation
+# in which it fails to correctly canonicalise unqualified or underqualified
+# domains (e.g., domain names with fewer than the configured ndots, which defaults
+# to 1).
+#
+# See: https://bugs.ruby-lang.org/issues/10412
+#
+# Conditionally apply the patch to the method definition by wrapping it at runtime.
+if jruby_gem_version < Gem::Version.new("9.0")
+  class Resolv::DNS
+    class Config
+      alias generate_candidates_without_toplevel generate_candidates
+      def generate_candidates_with_toplevel(name)
+        candidates = generate_candidates_without_toplevel(name)
+        fname = Name.create("#{name}.")
+        if !candidates.include?(fname)
+          candidates << fname
+        end
+        candidates
+      end
+      alias generate_candidates generate_candidates_with_toplevel
     end
   end
 end
