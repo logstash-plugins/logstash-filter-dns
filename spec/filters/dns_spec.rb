@@ -298,6 +298,25 @@ describe LogStash::Filters::DNS do
       end
     end
 
+    describe 'dns resolve lookup with search' do
+      config <<-CONFIG
+        filter {
+          dns {
+            resolve => ["host"]
+            action => "replace"
+            nameserver => {
+              address => ["127.0.0.99", "8.8.8.8"]
+              search  => "databits.net"
+            }
+          }
+        }
+      CONFIG
+
+      sample("host" => "carrera") do
+        insist { subject.get("host") } == "199.192.228.250"
+      end
+    end
+
     describe "failed cache" do
 
       let(:subject) { LogStash::Filters::DNS.new(config) }
@@ -418,7 +437,80 @@ describe LogStash::Filters::DNS do
     end
   end
 
-  describe "with nameserver integration" do
+  describe "with nameserver configuration" do
+    subject(:dns_filter_plugin) { LogStash::Filters::DNS.new(config) }
+
+    before(:each) do
+      allow(Resolv::DNS).to receive(:new).and_call_original
+    end
+
+    context 'nameserver specified as a string' do
+      let(:config) { { "nameserver" => "8.8.8.8" } }
+
+      it 'sets up the expected Resolv::DNS' do
+        dns_filter_plugin.register
+
+        expect(Resolv::DNS).to have_received(:new).with(:nameserver => ["8.8.8.8"], :search => [], :ndots => 1)
+      end
+    end
+
+    context 'nameserver specified as an array of strings' do
+      let(:config) { { "nameserver" => ["8.8.8.8", "8.8.4.4"] } }
+
+      it 'sets up the expected Resolv::DNS' do
+        dns_filter_plugin.register
+
+        expect(Resolv::DNS).to have_received(:new).with(:nameserver => ["8.8.8.8", "8.8.4.4"], :search => [], :ndots => 1)
+      end
+    end
+
+    context 'nameserver specified as a hash' do
+      context 'with only string address' do
+        let(:config) { { "nameserver" => { "address" => "8.8.8.8" } } }
+
+        it 'sets up the expected Resolv::DNS' do
+          dns_filter_plugin.register
+
+          expect(Resolv::DNS).to have_received(:new).with(:nameserver => ["8.8.8.8"], :search => [], :ndots => 1)
+        end
+      end
+      context 'with only array address' do
+        let(:config) { { "nameserver" => { "address" => ["8.8.8.8", "8.8.4.4"] } } }
+
+        it 'sets up the expected Resolv::DNS' do
+          dns_filter_plugin.register
+
+          expect(Resolv::DNS).to have_received(:new).with(:nameserver => ["8.8.8.8", "8.8.4.4"], :search => [], :ndots => 1)
+        end
+      end
+      context 'with search domains' do
+        let(:config) do
+          {
+            "nameserver" => {
+              "address" => ["127.0.0.1"],
+              "search" => search_domains
+            }
+          }
+        end
+
+        {
+          "string" => "internal.net",
+          "array of strings" => ["internal.net", "internal1.com"]
+        }.each do |desc, search_domains_arg|
+          let(:search_domains) { search_domains_arg }
+          context "as #{desc}" do
+            it 'sets up the expected Resolv::DNS' do
+              dns_filter_plugin.register
+
+              expect(Resolv::DNS).to have_received(:new).with(:nameserver => ["127.0.0.1"], :search => Array(search_domains), :ndots => 1)
+            end
+          end
+        end
+      end
+    end
+  end
+
+  describe "with hostsfile integration" do
     describe "lookup using fixture hosts file" do
       let(:subject) { LogStash::Filters::DNS.new(config) }
       let(:hostsfile) { File.join(File.dirname(__FILE__), "..", "fixtures", "hosts") }
