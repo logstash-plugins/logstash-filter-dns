@@ -33,6 +33,47 @@ if jruby_gem_version >= Gem::Version.new("9.1.13.0") && jruby_gem_version < Gem:
   end
 end
 
+# ref: https://github.com/logstash-plugins/logstash-filter-dns/issues/51
+#
+# JRuby versions starting at 9.2.0.0 have a bug caused by an upstream Ruby stdlib resolv.rb bug.
+# This bug is essentially the same as the previous above bug where there is a leak between the
+# DNS.allocate_request_id/DNS.free_request_id.
+# This fix is required because starting at JRuby 9.2.0.0 the resolv.rb code was updated from the
+# upstream Ruby stdlib code and the previous patch cannot be applied. Also this fix is better than the previous one.
+if jruby_gem_version >= Gem::Version.new("9.2.0.0")
+  class Resolv
+    class DNS
+      class Requester
+        class UnconnectedUDP
+          def sender(msg, data, host, port=Port)
+            lazy_initialize
+            sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
+            return nil if !sock
+            service = [IPAddr.new(host), port]
+            id = DNS.allocate_request_id(service[0].to_s, port)
+            request = msg.encode
+            request[0,2] = [id].pack('n')
+            return @senders[[service, id]] =
+                Sender.new(request, data, sock, host, port)
+          end
+
+          def close
+            @mutex.synchronize {
+              if @initialized
+                super
+                @senders.each_key {|service, id|
+                  DNS.free_request_id(service[0].to_s, service[1], id)
+                }
+                @initialized = false
+              end
+            }
+          end
+        end
+      end
+    end
+  end
+end
+
 # JRuby 1.x ships with a Ruby stdlib that has a bug in its resolv implementation
 # in which it fails to correctly canonicalise unqualified or underqualified
 # domains (e.g., domain names with fewer than the configured ndots, which defaults
