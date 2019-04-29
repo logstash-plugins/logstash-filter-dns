@@ -41,37 +41,13 @@ end
 # This fix is required because starting at JRuby 9.2.0.0 the resolv.rb code was updated from the
 # upstream Ruby stdlib code and the previous patch cannot be applied. Also this fix is better than the previous one.
 if jruby_gem_version >= Gem::Version.new("9.2.0.0")
-  class Resolv
-    class DNS
-      class Requester
-        class UnconnectedUDP
-          def sender(msg, data, host, port=Port)
-            lazy_initialize
-            sock = @socks_hash[host.index(':') ? "::" : "0.0.0.0"]
-            return nil if !sock
-            service = [IPAddr.new(host), port]
-            id = DNS.allocate_request_id(service[0].to_s, port)
-            request = msg.encode
-            request[0,2] = [id].pack('n')
-            return @senders[[service, id]] =
-                Sender.new(request, data, sock, host, port)
-          end
+  # save verbose level and mute the "warning: already initialized constant"
+  warn_level = $VERBOSE
+  $VERBOSE = nil
 
-          def close
-            @mutex.synchronize {
-              if @initialized
-                super
-                @senders.each_key {|service, id|
-                  DNS.free_request_id(service[0].to_s, service[1], id)
-                }
-                @initialized = false
-              end
-            }
-          end
-        end
-      end
-    end
-  end
+  require_relative "resolv_9270"
+
+  $VERBOSE = warn_level
 end
 
 # JRuby 1.x ships with a Ruby stdlib that has a bug in its resolv implementation
