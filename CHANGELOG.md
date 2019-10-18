@@ -1,3 +1,6 @@
+## 3.0.14
+  - Added documentation on the `nameserver` option for relying on `/etc/resolv.conf` to configure the resolver
+
 ## 3.0.13
   - Fixed JRuby resolver bug for versions after to 9.2.0.0 [#51](https://github.com/logstash-plugins/logstash-filter-dns/pull/51)
 

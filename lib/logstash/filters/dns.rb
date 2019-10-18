@@ -46,7 +46,14 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # specified under `reverse` and `resolve`.
   config :action, :validate => [ "append", "replace" ], :default => "append"
 
-  # Use custom nameserver(s). For example: `["8.8.8.8", "8.8.4.4"]`
+  # Use custom nameserver(s). For example: `["8.8.8.8", "8.8.4.4"]`.
+  # If `nameserver` is not specified then `/etc/resolv.conf` will be read to
+  # configure the resolver using the `nameserver`, `domain`,
+  # `search` and `ndots` directives in `/etc/resolv.conf`.
+  #
+  # Note that nameservers normally resolve fully qualified domain names (FQDN)
+  # and relying on `/etc/resolv.conf` can be useful to provide a domains search
+  # list to resolve underqualified host names for example.
   config :nameserver, :validate => :array
 
   # `resolv` calls will be wrapped in a timeout instance
