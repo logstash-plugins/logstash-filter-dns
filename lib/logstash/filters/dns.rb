@@ -46,14 +46,25 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # specified under `reverse` and `resolve`.
   config :action, :validate => [ "append", "replace" ], :default => "append"
 
-  # Use custom nameserver(s). For example: `["8.8.8.8", "8.8.4.4"]`.
+  # Use custom nameserver(s). For example:
+  #    filter {
+  #      dns {
+  #         nameserver => {
+  #          address => ["8.8.8.8", "8.8.4.4"]
+  #          search  => ["internal.net"]
+  #        }
+  #      }
+  #    }
+  #
+  # nameserver is a hash with the following key:
+  #   * a required `address` key, whose value is either a <<string,string>> or an <<array,array>>, representing one or more nameserver ip addresses
+  #   * an optional `search` key, whose value is either a <<string,string>> or an <<array,array>>, representing between one and six search domains (e.g., with search domain `com`, a query for `example` will match DNS entries for `example.com`)
+  #   * an optional `ndots` key, used in conjunction with `search`, whose value is a <<number,number>>, representing the minimum number of dots in a domain name being resolved that will _prevent_ the search domains from being used (default `1`; this option is rarely needed)
+  #   * For backward-compatibility, string ans arrays values are also accepted, representing one or more nameserver ip addresses _without_ search domains.
+  #
   # If `nameserver` is not specified then `/etc/resolv.conf` will be read to
   # configure the resolver using the `nameserver`, `domain`,
   # `search` and `ndots` directives in `/etc/resolv.conf`.
-  #
-  # Note that nameservers normally resolve fully qualified domain names (FQDN)
-  # and relying on `/etc/resolv.conf` can be useful to provide a domains search
-  # list to resolve underqualified host names for example.
   config :nameserver, :validate => :array
 
   # `resolv` calls will be wrapped in a timeout instance
@@ -142,7 +153,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
     ndots      = nameserver_hash.delete('ndots') || 1
     ndots      = Integer(ndots)
-    ndots <= 0 && fail(LogStash::ConfigurationError, "DNS Filter: ndots must be positive (got `#{@nameserver}`)")
+    ndots <= 0 && fail(LogStash::ConfigurationError, "DNS Filter: `ndots` must be positive (got `#{@nameserver}`)")
 
     fail(LogStash::ConfigurationError, "Unknown `nameserver` argument(s): #{nameserver_hash}") unless nameserver_hash.empty?
 

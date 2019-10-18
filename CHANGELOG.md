@@ -1,3 +1,6 @@
+## 3.1.0
+  - Added search domains to the `nameserver` option [#56](https://github.com/logstash-plugins/logstash-filter-dns/pull/56)
+
 ## 3.0.14
   - Added documentation on the `nameserver` option for relying on `/etc/resolv.conf` to configure the resolver
 
