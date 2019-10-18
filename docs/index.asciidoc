@@ -134,8 +134,9 @@ If `nameserver` is not specified then `/etc/resolv.conf` will be read to
 configure the resolver using the `nameserver`, `domain`,
 `search` and `ndots` directives in `/etc/resolv.conf`.
 
-Relying on `/etc/resolv.conf` can be useful to provide a domains
-search list to resolve underqualified host names for example.
+Note that nameservers normally resolve FQDNs and relying on `/etc/resolv.conf`
+can be useful to provide a domains search list to resolve underqualified
+host names for example.
 
 [id="plugins-{type}s-{plugin}-resolve"]
 ===== `resolve` 

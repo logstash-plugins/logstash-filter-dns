@@ -51,8 +51,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # configure the resolver using the `nameserver`, `domain`,
   # `search` and `ndots` directives in `/etc/resolv.conf`.
   #
-  # Relying on `/etc/resolv.conf` can be useful to provide a domains
-  # search list to resolve underqualified host names for example.
+  # Note that nameservers normally resolve FQDNs and relying on `/etc/resolv.conf`
+  # can be useful to provide a domains search list to resolve underqualified
+  # host names for example.
   config :nameserver, :validate => :array
 
   # `resolv` calls will be wrapped in a timeout instance
