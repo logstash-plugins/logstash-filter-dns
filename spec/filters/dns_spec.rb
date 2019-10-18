@@ -298,25 +298,6 @@ describe LogStash::Filters::DNS do
       end
     end
 
-    describe 'dns resolve lookup with search' do
-      config <<-CONFIG
-        filter {
-          dns {
-            resolve => ["host"]
-            action => "replace"
-            nameserver => {
-              address => ["127.0.0.99", "8.8.8.8"]
-              search  => "databits.net"
-            }
-          }
-        }
-      CONFIG
-
-      sample("host" => "carrera") do
-        insist { subject.get("host") } == "199.192.228.250"
-      end
-    end
-
     describe "failed cache" do
 
       let(:subject) { LogStash::Filters::DNS.new(config) }
@@ -437,6 +418,28 @@ describe LogStash::Filters::DNS do
     end
   end
 
+  describe "with search configuration" do
+    subject(:dns_filter_plugin) { LogStash::Filters::DNS.new(config) }
+
+    before(:each) do
+      subject.register
+    end
+
+    context "search domain specified" do
+      let(:config) { { "resolve" => ["domain"], "action" => "replace", "nameserver" => { "address" => ["1.2.3.4"], "search" => "elastic.co" } } }
+      let(:event) { LogStash::Event.new("domain" => "training") }
+
+      it "will expand training to training.elastic.co" do
+        allow(Resolv::DNS::Name).to receive(:new).and_call_original
+
+        # This is implementation specific but the only way I found to verify that the "search" option was working.
+        expect(Resolv::DNS::Name).to receive(:new).with([Resolv::DNS::Label::Str.new("training"), Resolv::DNS::Label::Str.new("elastic"), Resolv::DNS::Label::Str.new("co")]).and_call_original
+
+        subject.filter(event)
+      end
+    end
+  end
+
   describe "with nameserver configuration" do
     subject(:dns_filter_plugin) { LogStash::Filters::DNS.new(config) }
 
@@ -506,6 +509,23 @@ describe LogStash::Filters::DNS do
             end
           end
         end
+      end
+    end
+  end
+
+  describe "without nameserver configuration" do
+    subject(:dns_filter_plugin) { LogStash::Filters::DNS.new(config) }
+
+    context 'nameserver not specified' do
+      let(:config) { { "resolve" => ["domain"], "action" => "replace" } }
+
+      it 'sets up the expected Resolv::DNS without arguments' do
+        # We expect that when no nameserver option is specified
+        # Resolv::DNS.new will be called without arguments thus reading /etc/resolv.conf
+        # for its configuration which is the desired behaviour for backward compatibility
+
+        expect(Resolv::DNS).to receive(:new).once.with(no_args)
+        dns_filter_plugin.register
       end
     end
   end
