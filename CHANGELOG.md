@@ -1,3 +1,6 @@
+## 3.1.1
+  - Fixed asciidoc formatting for unordered list and a code sample in docs[#tbd](https://github.com/logstash-plugins/logstash-filter-dns/pull/tbd)
+
 ## 3.1.0
   - Added search domains to the `nameserver` option [#56](https://github.com/logstash-plugins/logstash-filter-dns/pull/56)
 
