@@ -35,12 +35,12 @@ end
 
 # ref: https://github.com/logstash-plugins/logstash-filter-dns/issues/51
 #
-# JRuby versions starting at 9.2.0.0 have a bug caused by an upstream Ruby stdlib resolv.rb bug.
+# JRuby versions starting at 9.2.0.0 and prior to 9.2.9.0 have a bug caused by an upstream Ruby stdlib resolv.rb bug.
 # This bug is essentially the same as the previous above bug where there is a leak between the
 # DNS.allocate_request_id/DNS.free_request_id.
-# This fix is required because starting at JRuby 9.2.0.0 the resolv.rb code was updated from the
+# This fix is required because starting at JRuby 9.2.0.0 and prior to 9.2.9.0 the resolv.rb code was updated from the
 # upstream Ruby stdlib code and the previous patch cannot be applied. Also this fix is better than the previous one.
-if jruby_gem_version >= Gem::Version.new("9.2.0.0")
+if jruby_gem_version >= Gem::Version.new("9.2.0.0") && jruby_gem_version < Gem::Version.new("9.2.9.0")
   # save verbose level and mute the "warning: already initialized constant"
   warn_level = $VERBOSE
   $VERBOSE = nil
