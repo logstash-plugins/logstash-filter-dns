@@ -1,3 +1,6 @@
+## 3.1.2
+  - Added restriction on JRuby resolv.rb patch to versions prior to 9.2.9.0 [#58](https://github.com/logstash-plugins/logstash-filter-dns/pull/58)
+
 ## 3.1.1
   - Fixed asciidoc formatting for unordered list and a code sample in docs[#57](https://github.com/logstash-plugins/logstash-filter-dns/pull/57)
 
