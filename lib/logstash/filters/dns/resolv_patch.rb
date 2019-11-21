@@ -40,7 +40,7 @@ end
 # DNS.allocate_request_id/DNS.free_request_id.
 # This fix is required because starting at JRuby 9.2.0.0 and prior to 9.2.9.0 the resolv.rb code was updated from the
 # upstream Ruby stdlib code and the previous patch cannot be applied. Also this fix is better than the previous one.
-if jruby_gem_version >= Gem::Version.new("9.2.0.0") && jruby_gem_version < Gem::Version.new("9.2.9.0")
+if Gem::Requirement.new([">= 9.2.0.0", "< 9.2.9.0"]).satisfied_by?(jruby_gem_version)
   # save verbose level and mute the "warning: already initialized constant"
   warn_level = $VERBOSE
   $VERBOSE = nil
