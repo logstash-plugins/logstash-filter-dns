@@ -6,13 +6,16 @@ require "resolv"
 describe LogStash::Filters::DNS do
   describe "with stubbed Resolv" do
     before(:each) do
-      allow_any_instance_of(Resolv).to receive(:getaddress).with("carrera.databits.net").and_return("199.192.228.250")
-      allow_any_instance_of(Resolv).to receive(:getaddress).with("does.not.exist").and_raise(Resolv::ResolvError)
-      allow_any_instance_of(Resolv).to receive(:getaddress).with("nonexistanthostname###.net").and_raise(Resolv::ResolvError)
-      allow_any_instance_of(Resolv).to receive(:getname).with("199.192.228.250").and_return("carrera.databits.net")
-      allow_any_instance_of(Resolv).to receive(:getname).with("127.0.0.1").and_return("localhost")
-      allow_any_instance_of(Resolv).to receive(:getname).with("128.0.0.1").and_raise(Resolv::ResolvError)
-      allow_any_instance_of(Resolv).to receive(:getname).with("199.192.228.250").and_return("carrera.databits.net")
+      # We use `Resolv#each_address` and `Resolv#each_name`, which have
+      # undefined return values but _yield_ once per result, so our stubs
+      # need to either yield a result or not yield at all if there is no result.
+      allow_any_instance_of(Resolv).to receive(:each_address).with("carrera.databits.net").and_yield("199.192.228.250")
+      allow_any_instance_of(Resolv).to receive(:each_address).with("does.not.exist") # no yield
+      allow_any_instance_of(Resolv).to receive(:each_address).with("nonexistanthostname###.net") # no yield
+      allow_any_instance_of(Resolv).to receive(:each_name).with("199.192.228.250").and_yield("carrera.databits.net")
+      allow_any_instance_of(Resolv).to receive(:each_name).with("127.0.0.1").and_yield("localhost")
+      allow_any_instance_of(Resolv).to receive(:each_name).with("128.0.0.1") # no yield
+      allow_any_instance_of(Resolv).to receive(:each_name).with("199.192.228.250").and_yield("carrera.databits.net")
     end
 
     describe "dns reverse lookup, replace (on a field)" do
@@ -305,7 +308,7 @@ describe LogStash::Filters::DNS do
       let(:event2) { LogStash::Event.new("message" => "unkownhost") }
 
       before(:each) do
-        allow(subject).to receive(:getaddress).and_raise Resolv::ResolvError
+        allow(subject).to receive(:getaddress).and_return(nil)
         subject.register
       end
 

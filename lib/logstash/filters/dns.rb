@@ -195,11 +195,12 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         else
           address = retriable_getaddress(raw)
         end
-      rescue Resolv::ResolvError => e
-        @failed_cache[raw] = true if @failed_cache
-        @logger.debug("DNS: couldn't resolve the hostname.",
-                      :field => field, :value => raw, :message => e.message)
-        return
+        if address.nil?
+          @failed_cache[raw] = true if @failed_cache
+          @logger.debug("DNS: couldn't resolve the hostname.",
+                        :field => field, :value => raw)
+          return
+        end
       rescue Resolv::ResolvTimeout, Timeout::Error
         @failed_cache[raw] = true if @failed_cache
         @logger.warn("DNS: timeout on resolving the hostname.",
@@ -275,11 +276,12 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         else
           hostname = retriable_getname(raw)
         end
-      rescue Resolv::ResolvError => e
-        @failed_cache[raw] = true if @failed_cache
-        @logger.debug("DNS: couldn't resolve the address.",
-                      :field => field, :value => raw, :message => e.message)
-        return
+        if hostname.nil?
+          @failed_cache[raw] = true if @failed_cache
+          @logger.debug("DNS: couldn't resolve the address.",
+                        :field => field, :value => raw)
+          return
+        end
       rescue Resolv::ResolvTimeout, Timeout::Error
         @failed_cache[raw] = true if @failed_cache
         @logger.warn("DNS: timeout on resolving address.",
@@ -350,13 +352,43 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   private
   def getname(address)
-    name = @resolv.getname(address).force_encoding(Encoding::UTF_8)
-    IDN.toUnicode(name)
+    name = resolv_getname_or_nil(@resolv, address)
+    name && name.force_encoding(Encoding::UTF_8)
+    name && IDN.toUnicode(name)
   end
 
   private
   def getaddress(name)
     idn = IDN.toASCII(name)
-    @resolv.getaddress(idn).force_encoding(Encoding::UTF_8)
+    address = resolv_getaddress_or_nil(@resolv, idn)
+    address && address.force_encoding(Encoding::UTF_8)
+  end
+
+  private
+  def resolv_getname_or_nil(resolver, address)
+    # `Resolv#each_name` yields to the provided block zero or more times;
+    # to prevent it from yielding multiple times when more than one match
+    # is found, we return directly in the block.
+    # See also `Resolv#getname`
+    resolver.each_name(address) do |name|
+      return name
+    end
+
+    # If no match was found, we return nil.
+    return nil
+  end
+
+  private
+  def resolv_getaddress_or_nil(resolver, name)
+    # `Resolv#each_address` yields to the provided block zero or more times;
+    # to prevent it from yielding multiple times when more than one match
+    # is found, we return directly in the block.
+    # See also `Resolv#getaddress`
+    resolver.each_address(name) do |address|
+      return address
+    end
+
+    # If no match was found, we return nil.
+    return nil
   end
 end # class LogStash::Filters::DNS
