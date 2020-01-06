@@ -1,3 +1,6 @@
+## 3.1.3
+  - Fixed an issue where each missed lookup could result in unreclaimed memory ([jruby bug](https://github.com/jruby/jruby/issues/6015)) by handling lookup misses without raising exceptions [#61](https://github.com/logstash-plugins/logstash-filter-dns/pull/61)
+
 ## 3.1.2
   - Added restriction on JRuby resolv.rb patch to versions prior to 9.2.9.0 [#58](https://github.com/logstash-plugins/logstash-filter-dns/pull/58)
 
