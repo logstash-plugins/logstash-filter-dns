@@ -3,7 +3,6 @@ require "logstash/filters/base"
 require "logstash/namespace"
 require "lru_redux"
 require "resolv"
-require "timeout"
 require "logstash/filters/dns/resolv_patch"
 
 java_import 'java.net.IDN'
@@ -29,7 +28,6 @@ java_import 'java.net.IDN'
 # milliseconds, the maximum throughput you can achieve with a single filter
 # worker is 500 events per second (1000 milliseconds / 2 milliseconds).
 class LogStash::Filters::DNS < LogStash::Filters::Base
-  # TODO(sissel): The timeout limitation does seem to be fixed in here: http://redmine.ruby-lang.org/issues/5100 # but isn't currently in JRuby.
   # TODO(sissel): make `action` required? This was always the intent, but it
   # due to a typo it was never enforced. Thus the default behavior in past
   # versions was `append` by accident.
@@ -94,7 +92,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   public
   def register
     if @nameserver.nil? && @hostsfile.nil?
-      @resolv = Resolv.new
+      @resolv = Resolv.new(default_resolvers)
     else
       @resolv = Resolv.new(build_resolvers)
     end
@@ -125,6 +123,20 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   private
 
+  def default_resolvers
+    [::Resolv::Hosts.new, default_dns_resolver]
+  end
+
+  def default_dns_resolver
+    dns_resolver(nil)
+  end
+
+  def dns_resolver(args=nil)
+    dns_resolver = ::Resolv::DNS.new(args)
+    dns_resolver.timeouts = @timeout
+    dns_resolver
+  end
+
   def build_resolvers
     build_user_host_resolvers.concat([::Resolv::Hosts.new]).concat(build_user_dns_resolver)
   end
@@ -136,8 +148,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   def build_user_dns_resolver
     return [] if @nameserver.nil? || @nameserver.empty?
-
-    [::Resolv::DNS.new(normalised_nameserver)]
+    [dns_resolver(normalised_nameserver)]
   end
 
   def normalised_nameserver
@@ -201,7 +212,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
                         :field => field, :value => raw)
           return
         end
-      rescue Resolv::ResolvTimeout, Timeout::Error
+      rescue Resolv::ResolvTimeout
         @failed_cache[raw] = true if @failed_cache
         @logger.warn("DNS: timeout on resolving the hostname.",
                       :field => field, :value => raw)
@@ -282,7 +293,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
                         :field => field, :value => raw)
           return
         end
-      rescue Resolv::ResolvTimeout, Timeout::Error
+      rescue Resolv::ResolvTimeout
         @failed_cache[raw] = true if @failed_cache
         @logger.warn("DNS: timeout on resolving address.",
                       :field => field, :value => raw)
@@ -323,10 +334,8 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   def retriable_request(&block)
     tries = 0
     begin
-      Timeout::timeout(@timeout) do
-        block.call
-      end
-    rescue Timeout::Error, SocketError
+      block.call
+    rescue Resolv::ResolvTimeout,  SocketError
       if tries < @max_retries
         tries = tries + 1
         retry
