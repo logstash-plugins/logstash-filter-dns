@@ -425,7 +425,7 @@ describe LogStash::Filters::DNS do
             @try ||= 0
             if @try < 2
               @try = @try + 1
-              raise Timeout::Error
+              raise SocketError
             else
               "127.0.0.1"
             end
