@@ -1,3 +1,7 @@
+## 3.1.4
+  - Replaced Timeout::timeout block with `Resolv::DNS::timeouts=` [#62](https://github.com/logstash-plugins/logstash-filter-dns/pull/62)
+  - Added restriction for ruby version > 2.0, effectively making Logstash 6.x+ a requirement [#62](https://github.com/logstash-plugins/logstash-filter-dns/pull/62)
+
 ## 3.1.3
   - Fixed an issue where each missed lookup could result in unreclaimed memory ([jruby bug](https://github.com/jruby/jruby/issues/6015)) by handling lookup misses without raising exceptions [#61](https://github.com/logstash-plugins/logstash-filter-dns/pull/61)
 

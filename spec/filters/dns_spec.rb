@@ -2,6 +2,8 @@
 require "logstash/devutils/rspec/spec_helper"
 require "logstash/filters/dns"
 require "resolv"
+require "logstash/filters/dns/resolv_patch"
+
 
 describe LogStash::Filters::DNS do
   describe "with stubbed Resolv" do
@@ -377,7 +379,7 @@ describe LogStash::Filters::DNS do
 
       context "when failing permanently" do
         before(:each) do
-          allow(subject).to receive(:getaddress).and_raise(Timeout::Error)
+          allow(subject).to receive(:getaddress).and_raise(Resolv::ResolvTimeout)
         end
 
         it "should fail a resolve after max_retries" do
@@ -385,7 +387,24 @@ describe LogStash::Filters::DNS do
           subject.filter(event)
         end
 
-        it "should cache the timeout" do
+        it "should cache the failure" do
+          expect do
+            subject.filter(event)
+          end.to change { subject.failed_cache[host] }.from(nil).to(true)
+        end
+      end
+
+      context "when unable to resolve an address" do
+        before(:each) do
+          allow(subject).to receive(:getaddress).and_return(nil)
+        end
+
+        it "should fail a resolve after max_retries" do
+          expect(subject).to receive(:getaddress).once
+          subject.filter(event)
+        end
+
+        it "should cache the failure" do
           expect do
             subject.filter(event)
           end.to change { subject.failed_cache[host] }.from(nil).to(true)
@@ -406,7 +425,7 @@ describe LogStash::Filters::DNS do
             @try ||= 0
             if @try < 2
               @try = @try + 1
-              raise Timeout::Error
+              raise SocketError
             else
               "127.0.0.1"
             end
@@ -527,7 +546,7 @@ describe LogStash::Filters::DNS do
         # Resolv::DNS.new will be called without arguments thus reading /etc/resolv.conf
         # for its configuration which is the desired behaviour for backward compatibility
 
-        expect(Resolv::DNS).to receive(:new).once.with(no_args)
+        expect(Resolv::DNS).to receive(:new).once.with(nil).and_call_original
         dns_filter_plugin.register
       end
     end
