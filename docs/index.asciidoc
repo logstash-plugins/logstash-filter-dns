@@ -79,7 +79,7 @@ specified under `reverse` and `resolve`.
 ===== `failed_cache_size` 
 
   * Value type is <<number,number>>
-  * Default value is `0`
+  * Default value is `0` (cache disabled)
 
 cache size for failed requests
 
@@ -95,7 +95,7 @@ how long to cache failed requests (in seconds)
 ===== `hit_cache_size` 
 
   * Value type is <<number,number>>
-  * Default value is `0`
+  * Default value is `0` (cache disabled)
 
 set the size of cache for successful requests
 
