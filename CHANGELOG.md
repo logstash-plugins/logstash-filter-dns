@@ -1,3 +1,6 @@
+## 3.1.0
+  - TODO
+
 ## 3.0.13
   - Fixed JRuby resolver bug for versions after to 9.2.0.0 [#51](https://github.com/logstash-plugins/logstash-filter-dns/pull/51)
 
