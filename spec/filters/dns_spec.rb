@@ -82,13 +82,13 @@ describe LogStash::Filters::DNS do
         allow(plugin.logger).to receive(:warn).with(any_args)
       end
 
-      it "should not throw an error when filtering" do
+      it "does not throw an error when filtering" do
         expect do
           plugin.filter(event)
         end.not_to raise_error
       end
 
-      it "should log a warning" do
+      it "logs an informative warning" do
         plugin.filter(event)
         expect(plugin.logger).to have_received(:warn).with("DNS: skipping reverse, can't deal with non-string values", :field => "foo", value: {"ip" => "1.2.3.4"})
       end
