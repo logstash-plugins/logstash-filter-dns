@@ -72,6 +72,27 @@ describe LogStash::Filters::DNS do
         insist { subject.get("foo")[1] } == "carrera.databits.net"
       end
     end
+    
+    describe "dns reverse lookup, non-string field" do
+      let(:plugin) { ::LogStash::Filters::DNS.new("reverse" => "foo") }
+      let(:event) { ::LogStash::Event.new("foo" => {"ip" => "1.2.3.4"} ) }
+
+      before do
+        plugin.register
+        allow(plugin.logger).to receive(:warn).with(any_args)
+      end
+
+      it "does not throw an error when filtering" do
+        expect do
+          plugin.filter(event)
+        end.not_to raise_error
+      end
+
+      it "logs an informative warning" do
+        plugin.filter(event)
+        expect(plugin.logger).to have_received(:warn).with("DNS: skipping reverse, can't deal with non-string values", :field => "foo", value: {"ip" => "1.2.3.4"})
+      end
+    end
 
     describe "dns reverse lookup, not an IP" do
       config <<-CONFIG
@@ -208,6 +229,21 @@ describe LogStash::Filters::DNS do
 
       sample("foo" => ["carrera.databits.net", "foo.databits.net"]) do
         insist { subject.get("foo") } == ["carrera.databits.net", "foo.databits.net"]
+      end
+    end
+
+    describe "dns resolve lookup, skip non-string value" do
+      config <<-CONFIG
+        filter {
+          dns {
+            resolve => "foo"
+            action => "replace"
+          }
+        }
+      CONFIG
+
+      sample("foo" => { "hostname" => "carrera.databits.net" }) do
+        insist { subject.get("foo") } == { "hostname" => "carrera.databits.net" }
       end
     end
 

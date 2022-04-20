@@ -194,6 +194,11 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         raw = raw.first
       end
 
+      if !raw.kind_of?(String)
+        @logger.warn("DNS: skipping resolve, can't deal with non-string values", :field => field, :value => raw)
+        return
+      end
+
       begin
         return if @failed_cache && @failed_cache[raw] # recently failed resolv, skip
         if @hit_cache
@@ -268,6 +273,11 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
             return
           end
           raw = raw.first
+      end
+      
+      if !raw.kind_of?(String)
+        @logger.warn("DNS: skipping reverse, can't deal with non-string values", :field => field, :value => raw)
+        return
       end
 
       if ! @ip_validator.match(raw)

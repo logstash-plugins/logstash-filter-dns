@@ -1,3 +1,6 @@
+## 3.1.5
+  - Fixed an issue where a non-string value existing in the resolve/reverse field could cause the plugin to crash
+
 ## 3.1.4
   - Replaced Timeout::timeout block with `Resolv::DNS::timeouts=` [#62](https://github.com/logstash-plugins/logstash-filter-dns/pull/62)
   - Added restriction for ruby version > 2.0, effectively making Logstash 6.x+ a requirement [#62](https://github.com/logstash-plugins/logstash-filter-dns/pull/62)
