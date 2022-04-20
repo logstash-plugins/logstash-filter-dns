@@ -1,5 +1,5 @@
 ## 3.1.5
-  - Fixed an issue where a non-string value existing in the resolve/reverse field could cause the plugin to crash
+  - Fixed an issue where a non-string value existing in the resolve/reverse field could cause the plugin to crash [#65](https://github.com/logstash-plugins/logstash-filter-dns/pull/65)
 
 ## 3.1.4
   - Replaced Timeout::timeout block with `Resolv::DNS::timeouts=` [#62](https://github.com/logstash-plugins/logstash-filter-dns/pull/62)
