@@ -86,6 +86,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # Use custom hosts file(s). For example: `["/var/db/my_custom_hosts"]`
   config :hostsfile, :validate => :array
 
+  # Tag(s) to apply if a DNS lookup times out. Defaults to `["_dnstimeout"]`.
+  config :tag_on_timeout, :validate => :array, :default => ["_dnstimeout"]
+
   attr_reader :hit_cache
   attr_reader :failed_cache
 
@@ -219,8 +222,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         end
       rescue Resolv::ResolvTimeout
         @failed_cache[raw] = true if @failed_cache
-        @logger.warn("DNS: timeout on resolving the hostname.",
+        @logger.info("DNS: timeout on resolving the hostname.",
                       :field => field, :value => raw)
+        @tag_on_timeout.each {|tag| event.tag(tag)}
         return
       rescue SocketError => e
         @logger.error("DNS: Encountered SocketError.",
@@ -305,8 +309,9 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         end
       rescue Resolv::ResolvTimeout
         @failed_cache[raw] = true if @failed_cache
-        @logger.warn("DNS: timeout on resolving address.",
+        @logger.info("DNS: timeout on resolving address.",
                       :field => field, :value => raw)
+        @tag_on_timeout.each {|tag| event.tag(tag)}
         return
       rescue SocketError => e
         @logger.error("DNS: Encountered SocketError.",
