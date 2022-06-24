@@ -87,7 +87,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   config :hostsfile, :validate => :array
 
   # Tag(s) to apply if a DNS lookup times out. Defaults to `["_dnstimeout"]`.
-  config :tag_on_timeout, :validate => :array, :default => ["_dnstimeout"]
+  config :tag_on_timeout, :validate => :string, :list => true, :default => ["_dnstimeout"]
 
   attr_reader :hit_cache
   attr_reader :failed_cache
