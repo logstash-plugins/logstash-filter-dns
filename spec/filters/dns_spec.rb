@@ -7,6 +7,7 @@ require "logstash/filters/dns/resolv_patch"
 
 
 describe LogStash::Filters::DNS do
+
   describe "with stubbed Resolv" do
     before(:each) do
       # We use `Resolv#each_address` and `Resolv#each_name`, which have
@@ -627,7 +628,7 @@ describe LogStash::Filters::DNS do
     let(:subject) { LogStash::Filters::DNS.new(config) }
 
     before(:each) do
-      allow(subject).to receive(:getaddress).and_raise Timeout::Error
+      allow(subject).to receive(:getaddress).and_raise(Resolv::ResolvTimeout)
       subject.register
       subject.filter(event)
     end
@@ -642,7 +643,7 @@ describe LogStash::Filters::DNS do
     end
 
     context "when using a custom tag" do
-      let(:config) { { "resolve" => ["message"], "tag_on_timeout" => ["dns_custom_timeout"] } }
+      let(:config) { { "resolve" => ["message"], "tags_on_timeout" => ["dns_custom_timeout"] } }
       let(:event) { LogStash::Event.new("message" => "carrera.databits.net") }
 
       it "should add the custom DNS timeout tag" do
@@ -651,7 +652,7 @@ describe LogStash::Filters::DNS do
     end
 
     context "when using no tags" do
-      let(:config) { { "resolve" => ["message"], "tag_on_timeout" => [] } }
+      let(:config) { { "resolve" => ["message"], "tags_on_timeout" => [] } }
       let(:event) { LogStash::Event.new("message" => "carrera.databits.net") }
 
       it "should not add any failure tags" do
@@ -665,7 +666,7 @@ describe LogStash::Filters::DNS do
     let(:subject) { LogStash::Filters::DNS.new(config) }
 
     before(:each) do
-      allow(subject).to receive(:getname).and_raise Timeout::Error
+      allow(subject).to receive(:getname).and_raise(Resolv::ResolvTimeout)
       subject.register
       subject.filter(event)
     end
@@ -680,7 +681,7 @@ describe LogStash::Filters::DNS do
     end
 
     context "when using a custom tag" do
-      let(:config) { { "reverse" => ["message"], "tag_on_timeout" => ["dns_custom_timeout"] } }
+      let(:config) { { "reverse" => ["message"], "tags_on_timeout" => ["dns_custom_timeout"] } }
       let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
 
       it "should add the custom DNS timeout tag" do
@@ -689,7 +690,7 @@ describe LogStash::Filters::DNS do
     end
 
     context "when using no tags" do
-      let(:config) { { "reverse" => ["message"], "tag_on_timeout" => [] } }
+      let(:config) { { "reverse" => ["message"], "tags_on_timeout" => [] } }
       let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
 
       it "should not add any failure tags" do

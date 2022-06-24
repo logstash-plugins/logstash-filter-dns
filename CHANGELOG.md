@@ -1,4 +1,4 @@
-## 3.1.6
+## 3.2.0
   - Support adding tag(s) on DNS lookup times out, defaults to `["_dnstimeout"]` [#67](https://github.com/logstash-plugins/logstash-filter-dns/pull/67)
 
 ## 3.1.5
