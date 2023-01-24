@@ -746,7 +746,7 @@ describe LogStash::Filters::DNS do
       end
 
       context "with warn on timeout disabled" do
-        let(:config) { { "reverse" => ["message"], "warn_on_timeout" => true } }
+        let(:config) { { "reverse" => ["message"], "warn_on_timeout" => false } }
         let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
 
         before do
