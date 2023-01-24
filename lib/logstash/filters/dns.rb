@@ -91,7 +91,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
 
   # For some cases warning timeout may bring noise but for some cases it may be sensitive
   # A config to produce warn message when timeout happens
-  config :warn_on_timeout, :validate => :boolean, :default => false
+  config :warn_on_timeout, :validate => :boolean, :default => true
 
   attr_reader :hit_cache
   attr_reader :failed_cache

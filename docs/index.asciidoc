@@ -187,7 +187,7 @@ Add tag(s) on DNS lookup time out.
 ===== `warn_on_timeout`
 
 * Value type is <<boolean,boolean>>
-* Defaults to `false`.
+* Defaults to `true`.
 
 A flag to determine to produce warning log on DNS lookup time out. When `false`, the plugin produces info level log.
 
