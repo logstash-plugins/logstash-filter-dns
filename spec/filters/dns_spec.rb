@@ -662,31 +662,17 @@ describe LogStash::Filters::DNS do
 
     context "when logging" do
 
-      context "with default on timeout enabled" do
+      context "with debug" do
         let(:config) { { "resolve" => ["message"] } }
         let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
 
         before do
-          allow(subject.logger).to receive(:warn).with(any_args)
+          allow(subject.logger).to receive(:debug).with(any_args)
         end
 
-        it "should log timeout in warn level log" do
+        it "logs on timeout exception" do
           subject.filter(event)
-          expect(subject.logger).to have_received(:warn).with("DNS: timeout on resolving the hostname.", :field => "message", :value => "127.0.0.1")
-        end
-      end
-
-      context "with warn on timeout disabled" do
-        let(:config) { { "resolve" => ["message"], "warn_on_timeout" => false } }
-        let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
-
-        before do
-          allow(subject.logger).to receive(:info).with(any_args)
-        end
-
-        it "should log timeout in info level log" do
-          subject.filter(event)
-          expect(subject.logger).to have_received(:info).with("DNS: timeout on resolving the hostname.", :field => "message", :value => "127.0.0.1")
+          expect(subject.logger).to have_received(:debug).with("DNS: timeout on resolving the hostname.", :field => "message", :value => "127.0.0.1")
         end
       end
     end
@@ -731,31 +717,17 @@ describe LogStash::Filters::DNS do
 
     context "when logging" do
 
-      context "with default on timeout enabled" do
+      context "with debug" do
         let(:config) { { "reverse" => ["message"] } }
         let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
 
         before do
-          allow(subject.logger).to receive(:warn).with(any_args)
+          allow(subject.logger).to receive(:debug).with(any_args)
         end
 
-        it "should log timeout in warn level log" do
+        it "logs timeout exception" do
           subject.filter(event)
-          expect(subject.logger).to have_received(:warn).with("DNS: timeout on resolving address.", :field => "message", :value => "127.0.0.1")
-        end
-      end
-
-      context "with warn on timeout disabled" do
-        let(:config) { { "reverse" => ["message"], "warn_on_timeout" => false } }
-        let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
-
-        before do
-          allow(subject.logger).to receive(:info).with(any_args)
-        end
-
-        it "should log timeout in info level log" do
-          subject.filter(event)
-          expect(subject.logger).to have_received(:info).with("DNS: timeout on resolving address.", :field => "message", :value => "127.0.0.1")
+          expect(subject.logger).to have_received(:debug).with("DNS: timeout on resolving address.", :field => "message", :value => "127.0.0.1")
         end
       end
     end

@@ -60,7 +60,6 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-reverse>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-tag_on_timeout>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-timeout>> |<<number,number>>|No
-| <<plugins-{type}s-{plugin}-warn_on_timeout>> |<<boolean,boolean>>|No
 |=======================================================================
 
 Also see <<plugins-{type}s-{plugin}-common-options>> for a list of options supported by all
@@ -182,14 +181,6 @@ Reverse resolve one or more fields.
 * Defaults to `["_dnstimeout"]`.
 
 Add tag(s) on DNS lookup time out.
-
-[id="plugins-{type}s-{plugin}-warn_on_timeout"]
-===== `warn_on_timeout`
-
-* Value type is <<boolean,boolean>>
-* Defaults to `true`.
-
-A flag to determine to produce warning log on DNS lookup time out. When `false`, the plugin produces info level log.
 
 
 [id="plugins-{type}s-{plugin}-common-options"]

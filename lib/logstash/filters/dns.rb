@@ -89,10 +89,6 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # Tag(s) to apply if a DNS lookup times out. Defaults to `["_dnstimeout"]`.
   config :tag_on_timeout, :validate => :string, :list => true, :default => ["_dnstimeout"]
 
-  # For some cases warning timeout may bring noise but for some cases it may be sensitive
-  # A config to produce warn message when timeout happens
-  config :warn_on_timeout, :validate => :boolean, :default => true
-
   attr_reader :hit_cache
   attr_reader :failed_cache
 
@@ -226,12 +222,8 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         end
       rescue Resolv::ResolvTimeout
         @failed_cache[raw] = true if @failed_cache
-        log_message = "DNS: timeout on resolving the hostname."
-        if @warn_on_timeout
-          @logger.warn(log_message, :field => field, :value => raw)
-        else
-          @logger.info(log_message, :field => field, :value => raw)
-        end
+        @logger.debug("DNS: timeout on resolving the hostname.",
+                      :field => field, :value => raw)
         @tag_on_timeout.each { |tag| event.tag(tag) }
         return
       rescue SocketError => e
@@ -317,12 +309,8 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
         end
       rescue Resolv::ResolvTimeout
         @failed_cache[raw] = true if @failed_cache
-        log_message = "DNS: timeout on resolving address."
-        if @warn_on_timeout
-          @logger.warn(log_message, :field => field, :value => raw)
-        else
-          @logger.info(log_message, :field => field, :value => raw)
-        end
+        @logger.debug("DNS: timeout on resolving address.",
+                      :field => field, :value => raw)
         @tag_on_timeout.each { |tag| event.tag(tag) }
         return
       rescue SocketError => e
