@@ -1,3 +1,7 @@
+## 3.2.0
+  - Support adding tag(s) on DNS lookup times out, defaults to `["_dnstimeout"]` [#67](https://github.com/logstash-plugins/logstash-filter-dns/pull/67)
+  - As timeouts can be received through tags now, DNS lookup timeouts are logged in debug logs only. [#67](https://github.com/logstash-plugins/logstash-filter-dns/pull/67)
+
 ## 3.1.5
   - Fixed an issue where a non-string value existing in the resolve/reverse field could cause the plugin to crash [#65](https://github.com/logstash-plugins/logstash-filter-dns/pull/65)
 

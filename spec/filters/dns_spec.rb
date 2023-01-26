@@ -7,6 +7,7 @@ require "logstash/filters/dns/resolv_patch"
 
 
 describe LogStash::Filters::DNS do
+
   describe "with stubbed Resolv" do
     before(:each) do
       # We use `Resolv#each_address` and `Resolv#each_name`, which have
@@ -621,4 +622,115 @@ describe LogStash::Filters::DNS do
       end
     end
   end
+
+  describe "dns forward timeout" do
+
+    let(:subject) { LogStash::Filters::DNS.new(config) }
+
+    before(:each) do
+      allow(subject).to receive(:getaddress).and_raise(Resolv::ResolvTimeout)
+      subject.register
+      subject.filter(event)
+    end
+
+    context "when using the default tag" do
+      let(:config) { { "resolve" => ["message"] } }
+      let(:event) { LogStash::Event.new("message" => "carrera.databits.net") }
+
+      it "should add the default DNS timeout tag" do
+        expect(event.get("tags")).to eq(["_dnstimeout"])
+      end
+    end
+
+    context "when using a custom tag" do
+      let(:config) { { "resolve" => ["message"], "tag_on_timeout" => ["dns_custom_timeout"] } }
+      let(:event) { LogStash::Event.new("message" => "carrera.databits.net") }
+
+      it "should add the custom DNS timeout tag" do
+        expect(event.get("tags")).to eq(["dns_custom_timeout"])
+      end
+    end
+
+    context "when using no tags" do
+      let(:config) { { "resolve" => ["message"], "tag_on_timeout" => [] } }
+      let(:event) { LogStash::Event.new("message" => "carrera.databits.net") }
+
+      it "should not add any failure tags" do
+        expect(event.get("tags")).to eq(nil)
+      end
+    end
+
+    context "when logging" do
+
+      context "with debug" do
+        let(:config) { { "resolve" => ["message"] } }
+        let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
+
+        before do
+          allow(subject.logger).to receive(:debug).with(any_args)
+        end
+
+        it "logs on timeout exception" do
+          subject.filter(event)
+          expect(subject.logger).to have_received(:debug).with("DNS: timeout on resolving the hostname.", :field => "message", :value => "127.0.0.1")
+        end
+      end
+    end
+  end
+
+  describe "dns reverse timeout" do
+
+    let(:subject) { LogStash::Filters::DNS.new(config) }
+
+    before(:each) do
+      allow(subject).to receive(:getname).and_raise(Resolv::ResolvTimeout)
+      subject.register
+      subject.filter(event)
+    end
+
+    context "when using the default tag" do
+      let(:config) { { "reverse" => ["message"] } }
+      let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
+
+      it "should add the default DNS timeout tag" do
+        expect(event.get("tags")).to eq(["_dnstimeout"])
+      end
+    end
+
+    context "when using a custom tag" do
+      let(:config) { { "reverse" => ["message"], "tag_on_timeout" => ["dns_custom_timeout"] } }
+      let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
+
+      it "should add the custom DNS timeout tag" do
+        expect(event.get("tags")).to eq(["dns_custom_timeout"])
+      end
+    end
+
+    context "when using no tags" do
+      let(:config) { { "reverse" => ["message"], "tag_on_timeout" => [] } }
+      let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
+
+      it "should not add any failure tags" do
+        expect(event.get("tags")).to eq(nil)
+      end
+    end
+
+    context "when logging" do
+
+      context "with debug" do
+        let(:config) { { "reverse" => ["message"] } }
+        let(:event) { LogStash::Event.new("message" => "127.0.0.1") }
+
+        before do
+          allow(subject.logger).to receive(:debug).with(any_args)
+        end
+
+        it "logs timeout exception" do
+          subject.filter(event)
+          expect(subject.logger).to have_received(:debug).with("DNS: timeout on resolving address.", :field => "message", :value => "127.0.0.1")
+        end
+      end
+    end
+  end
+
 end
