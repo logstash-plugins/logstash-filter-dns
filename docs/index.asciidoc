@@ -166,14 +166,6 @@ Forward resolve one or more fields.
 
 Reverse resolve one or more fields.
 
-[id="plugins-{type}s-{plugin}-timeout"]
-===== `timeout` 
-
-  * Value type is <<number,number>>
-  * Default value is `0.5`
-
-`resolv` calls will be wrapped in a timeout instance
-
 [id="plugins-{type}s-{plugin}-tag_on_timeout"]
 ===== `tag_on_timeout`
 
@@ -182,6 +174,13 @@ Reverse resolve one or more fields.
 
 Add tag(s) on DNS lookup time out.
 
-
 [id="plugins-{type}s-{plugin}-common-options"]
 include::{include_path}/{type}.asciidoc[]
+
+[id="plugins-{type}s-{plugin}-timeout"]
+===== `timeout` 
+
+  * Value type is <<number,number>>
+  * Default value is `0.5`
+
+`resolv` calls will be wrapped in a timeout instance
