@@ -77,11 +77,17 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
   # how long to cache successful requests (in seconds)
   config :hit_cache_ttl, :validate => :number, :default => 60
 
+  # Enable or disable caching nil values
+  config :ignore_empty_hit_cache, :validate => :boolean, :default => true
+
   # cache size for failed requests
   config :failed_cache_size, :validate => :number, :default => 0
 
   # how long to cache failed requests (in seconds)
   config :failed_cache_ttl, :validate => :number, :default => 5
+
+  # Enable or disable caching nil values
+  config :ignore_empty_failed_cache, :validate => :boolean, :default => true
 
   # Use custom hosts file(s). For example: `["/var/db/my_custom_hosts"]`
   config :hostsfile, :validate => :array
@@ -101,11 +107,11 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
     end
 
     if @hit_cache_size > 0
-      @hit_cache = LruRedux::TTL::ThreadSafeCache.new(@hit_cache_size, @hit_cache_ttl)
+      @hit_cache = LruRedux::TTL::ThreadSafeCache.new(@hit_cache_size, @hit_cache_ttl, @ignore_empty_hit_cache)
     end
 
     if @failed_cache_size > 0
-      @failed_cache = LruRedux::TTL::ThreadSafeCache.new(@failed_cache_size, @failed_cache_ttl)
+      @failed_cache = LruRedux::TTL::ThreadSafeCache.new(@failed_cache_size, @failed_cache_ttl, @ignore_empty_failed_cache)
     end
 
     @ip_validator = Resolv::AddressRegex
@@ -278,7 +284,7 @@ class LogStash::Filters::DNS < LogStash::Filters::Base
           end
           raw = raw.first
       end
-      
+
       if !raw.kind_of?(String)
         @logger.warn("DNS: skipping reverse, can't deal with non-string values", :field => field, :value => raw)
         return

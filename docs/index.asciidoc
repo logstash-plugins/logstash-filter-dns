@@ -51,8 +51,10 @@ This plugin supports the following configuration options plus the <<plugins-{typ
 | <<plugins-{type}s-{plugin}-action>> |<<string,string>>, one of `["append", "replace"]`|No
 | <<plugins-{type}s-{plugin}-failed_cache_size>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-failed_cache_ttl>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-ignore_empty_failed_cache>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-hit_cache_size>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-hit_cache_ttl>> |<<number,number>>|No
+| <<plugins-{type}s-{plugin}-ignore_empty_hit_cache>> |<<boolean,boolean>>|No
 | <<plugins-{type}s-{plugin}-hostsfile>> |<<array,array>>|No
 | <<plugins-{type}s-{plugin}-max_retries>> |<<number,number>>|No
 | <<plugins-{type}s-{plugin}-nameserver>> |<<hash,hash>>|No
@@ -68,7 +70,7 @@ filter plugins.
 &nbsp;
 
 [id="plugins-{type}s-{plugin}-action"]
-===== `action` 
+===== `action`
 
   * Value can be any of: `append`, `replace`
   * Default value is `"append"`
@@ -77,7 +79,7 @@ Determine what action to do: append or replace the values in the fields
 specified under `reverse` and `resolve`.
 
 [id="plugins-{type}s-{plugin}-failed_cache_size"]
-===== `failed_cache_size` 
+===== `failed_cache_size`
 
   * Value type is <<number,number>>
   * Default value is `0` (cache disabled)
@@ -85,15 +87,21 @@ specified under `reverse` and `resolve`.
 cache size for failed requests
 
 [id="plugins-{type}s-{plugin}-failed_cache_ttl"]
-===== `failed_cache_ttl` 
+===== `failed_cache_ttl`
 
   * Value type is <<number,number>>
   * Default value is `5`
 
 how long to cache failed requests (in seconds)
 
+[id="plugins-{type}s-{plugin}-ignore_empty_failed_cache"]
+===== `ignore_empty_failed_cache`
+
+  * Value type is <<boolean,boolean>>
+  * Default value is `true`
+
 [id="plugins-{type}s-{plugin}-hit_cache_size"]
-===== `hit_cache_size` 
+===== `hit_cache_size`
 
   * Value type is <<number,number>>
   * Default value is `0` (cache disabled)
@@ -101,15 +109,21 @@ how long to cache failed requests (in seconds)
 set the size of cache for successful requests
 
 [id="plugins-{type}s-{plugin}-hit_cache_ttl"]
-===== `hit_cache_ttl` 
+===== `hit_cache_ttl`
 
   * Value type is <<number,number>>
   * Default value is `60`
 
+[id="plugins-{type}s-{plugin}-ignore_empty_hit_cache"]
+===== `ignore_empty_hit_cache`
+
+  * Value type is <<boolean,boolean>>
+  * Default value is `true`
+
 how long to cache successful requests (in seconds)
 
 [id="plugins-{type}s-{plugin}-hostsfile"]
-===== `hostsfile` 
+===== `hostsfile`
 
   * Value type is <<array,array>>
   * There is no default value for this setting.
@@ -117,7 +131,7 @@ how long to cache successful requests (in seconds)
 Use custom hosts file(s). For example: `["/var/db/my_custom_hosts"]`
 
 [id="plugins-{type}s-{plugin}-max_retries"]
-===== `max_retries` 
+===== `max_retries`
 
   * Value type is <<number,number>>
   * Default value is `2`
@@ -125,7 +139,7 @@ Use custom hosts file(s). For example: `["/var/db/my_custom_hosts"]`
 number of times to retry a failed resolve/reverse
 
 [id="plugins-{type}s-{plugin}-nameserver"]
-===== `nameserver` 
+===== `nameserver`
 
   * Value type is <<hash,hash>>, and is composed of:
   ** a required `address` key, whose value is either a <<string,string>> or an <<array,array>>, representing one or more nameserver ip addresses
@@ -151,7 +165,7 @@ configure the resolver using the `nameserver`, `domain`,
 `search` and `ndots` directives in `/etc/resolv.conf`.
 
 [id="plugins-{type}s-{plugin}-resolve"]
-===== `resolve` 
+===== `resolve`
 
   * Value type is <<array,array>>
   * There is no default value for this setting.
@@ -159,7 +173,7 @@ configure the resolver using the `nameserver`, `domain`,
 Forward resolve one or more fields.
 
 [id="plugins-{type}s-{plugin}-reverse"]
-===== `reverse` 
+===== `reverse`
 
   * Value type is <<array,array>>
   * There is no default value for this setting.
